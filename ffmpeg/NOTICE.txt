@@ -1,0 +1,9 @@
+FFmpeg WebAssembly core, single-threaded (@ffmpeg/core 0.12.10)
+Distributed under GPL-2.0-or-later, with component notices in upstream sources.
+The two core.wasm parts concatenate to the unmodified upstream binary.
+
+Release, WebAssembly wrapper, build recipes and dependency revisions:
+https://github.com/ffmpegwasm/ffmpeg.wasm/tree/v0.12.10
+
+Upstream release package:
+https://registry.npmjs.org/@ffmpeg/core/-/core-0.12.10.tgz
