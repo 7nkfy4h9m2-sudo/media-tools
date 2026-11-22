@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><script data-artifact-bridge>/* Media Tools artifact bridge: routes <a download> saves through the host's downloads capability.
+   Outside claude.ai (offline copies) it stays inactive and the browser's native download is used. */
+(function(){
+  if (window.__mtBridge) return; window.__mtBridge = true;
+  var blobs = new Map(), dl = null, queue = Promise.resolve();
+  var origCreate = URL.createObjectURL, origRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = function(o){ var u = origCreate.apply(URL, arguments); try { if (o instanceof Blob) blobs.set(u, o); } catch(e){} return u; };
+  URL.revokeObjectURL = function(u){ blobs.delete(u); return origRevoke.apply(URL, arguments); };
+  function init(){
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        window.claude.use('downloads').then(function(x){ dl = x; }, function(){ dl = null; });
+        return true;
+      }
+    } catch(e){}
+    return false;
+  }
+  if (!init()) { var tries = 0, t = setInterval(function(){ if (init() || ++tries > 40) clearInterval(t); }, 250); }
+  function toast(msg){
+    var el = document.getElementById('mt-bridge-toast');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'mt-bridge-toast'; el.setAttribute('role','status');
+      el.style.cssText = 'position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;background:rgba(33,39,52,.94);color:#fff;border-radius:14px;padding:12px 18px;max-width:min(90vw,460px);font:500 13px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.16);transition:opacity .16s;pointer-events:none';
+      (document.body || document.documentElement).appendChild(el);
+    }
+    el.textContent = msg; el.style.opacity = '1';
+    clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = '0'; }, 3600);
+  }
+  function nameFor(a){
+    var n = a.getAttribute('download');
+    if (!n) { try { n = decodeURIComponent(new URL(a.href, location.href).pathname.split('/').pop()); } catch(e){} }
+    return n || 'download';
+  }
+  function dataFrom(href){
+    var b = blobs.get(href);
+    if (b) return Promise.resolve(b);
+    if (/^data:/i.test(href)) {
+      var i = href.indexOf(','), meta = href.slice(5, i), body = href.slice(i + 1);
+      if (/;base64/i.test(meta)) {
+        var bin = atob(body), arr = new Uint8Array(bin.length);
+        for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+        return Promise.resolve(new Blob([arr]));
+      }
+      return Promise.resolve(new Blob([decodeURIComponent(body)]));
+    }
+    return fetch(href).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
+  }
+  var MSG = {
+    declined: '저장을 취소했습니다.',
+    rejected_extension: '이 파일 형식은 여기서 저장할 수 없습니다.',
+    extension_not_enabled: '이 파일 형식은 여기서 저장할 수 없습니다.',
+    too_large: '파일이 너무 커서 저장할 수 없습니다.',
+    rate_limited: '이전 저장 확인이 진행 중입니다. 잠시 후 다시 시도해 주세요.'
+  };
+  function save(a){
+    var href = a.href, name = nameFor(a), pending = dataFrom(href);
+    queue = queue.then(function(){
+      return pending.then(function(data){ return dl.save({ filename: name, data: data }); })
+        .then(function(){}, function(err){
+          var c = err && err.code;
+          toast(MSG[c] || ('파일을 저장하지 못했습니다' + (err && err.message ? ': ' + err.message : '.')));
+        });
+    });
+  }
+  function eligible(a){
+    return dl && a && a.hasAttribute && a.hasAttribute('download') && a.getAttribute('href');
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
+    if (!eligible(a) || e.defaultPrevented) return;
+    e.preventDefault(); e.stopImmediatePropagation(); save(a);
+  }, true);
+  var origClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function(){
+    if (eligible(this) && !this.isConnected) { save(this); return; }
+    return origClick.apply(this, arguments);
+  };
+})();
+</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Numbering · Media Tools</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      background: #f3f4f6;
+      color: #22252b;
+      --accent: #2468e7;
+      --muted: #626872;
+      --line: #e8eaee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 800px; margin: 0 auto; padding: 48px 20px 60px; }
+    .tool-nav { margin-bottom: 24px; }
+    .tool-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: inherit;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .tool-nav a:hover { color: var(--accent); }
+    :is(button, a):focus-visible { outline: 3px solid #4586fb; outline-offset: 3px; }
+    header { margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 5vw, 2.25rem); letter-spacing: -.06em; }
+    .panel {
+      background: white;
+      padding: 24px 32px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+    }
+    .drop {
+      text-align: center;
+      padding: 22px 14px;
+      border: 2px dashed #9ab9ef;
+      border-radius: 12px;
+      background: #f5f8ff;
+    }
+    .drop.active { background: #e6efff; border-color: var(--accent); }
+    .drop strong { font-size: 1.05rem; }
+    .drop p, .hint, .status { color: var(--muted); font-size: .88rem; line-height: 1.65; }
+    .drop p { margin: 6px 0 14px; }
+    button {
+      font: inherit;
+      font-weight: 700;
+      border: 1px solid #d6dbe2;
+      border-radius: 8px;
+      background: #fff;
+      color: #22252b;
+      cursor: pointer;
+      padding: 8px 13px;
+    }
+    button:hover:not(:disabled) { background: #e6efff; border-color: var(--accent); }
+    button:disabled { opacity: .55; cursor: default; }
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    h2 { font-size: 1.08rem; margin: 0; }
+    .total { color: var(--accent); font-size: .88rem; font-weight: 700; text-align: right; }
+    .hint { margin: 6px 0 12px; }
+    ol { padding: 0; margin: 0; list-style: none; }
+    li {
+      display: grid;
+      grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .index { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .folder-name { display: block; overflow-wrap: anywhere; }
+    .folder-detail { display: block; margin-top: 4px; color: var(--muted); font-size: .85rem; }
+    .controls { display: flex; gap: 5px; }
+    .controls button { min-width: 36px; padding: 6px 8px; font-size: .82rem; }
+    .footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+    .primary {
+      padding: 11px 16px;
+      background: var(--accent);
+      color: white;
+      border-color: transparent;
+    }
+    .primary:hover:not(:disabled) { background: #1b52bd; }
+    .status { flex: 1 1 200px; margin: 0; overflow-wrap: anywhere; }
+    .status.error { color: #a02c26; }
+    progress { width: 100%; height: 8px; accent-color: var(--accent); }
+    @media (max-width: 520px) {
+      main { padding: 20px 12px 32px; }
+      .panel { padding: 20px 16px; }
+      li { grid-template-columns: 1.4rem minmax(0, 1fr); }
+      .controls { grid-column: 2; }
+    }
+  </style>
+<style data-file-picker>
+#drop.file-picker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 166px;
+  margin: 0 0 16px;
+  padding: 20px;
+  box-sizing: border-box;
+  border: 1px dashed #cdd5df;
+  border-radius: 18px;
+  background: #fafbfc;
+  color: #22252b;
+  font: inherit;
+  text-align: center;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color .12s, border-color .12s;
+}
+#drop.file-picker strong { font-size: 16px; font-weight: 700; pointer-events: none; }
+#drop.file-picker:is(.drag,.over,.active),
+#drop.file-picker:hover:not(:disabled):not(:has(input:disabled)) {
+  background: #e6efff;
+  border-color: #3478f6;
+}
+#drop.file-picker:focus-visible,
+#drop.file-picker:has(input:focus-visible) {
+  outline: 2px solid #3478f6;
+  outline-offset: 3px;
+}
+#drop.file-picker:disabled,
+#drop.file-picker:has(input:disabled) { opacity: .4; cursor: not-allowed; }
+#drop.file-picker > input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+@media (max-width: 760px) {
+  #drop.file-picker { min-height: 140px; padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #drop.file-picker { transition: none; }
+}
+</style>
+<style data-work-card>
+.work-card { display:block; padding:0; background:#fff; border:1px solid #e4e6ea; border-radius:22px; min-width:0; }
+.work-card [hidden] { display:none !important; }
+.work-head { display:grid; justify-items:center; gap:20px; border-bottom:1px solid #e4e6ea; padding:20px 24px; }
+.work-head h2 { display:flex; align-items:center; gap:10px; margin:0; font-size:17px; }
+.work-count { display:inline-block; border-radius:8px; padding:4px 8px; background:#f0f1f3; color:#646a74; font-size:13px; font-weight:650; }
+.work-controls { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+.work-state { padding:20px 24px 0; }
+.work-state #status { margin:0; color:#646a74; line-height:1.55; font-size:14px; overflow-wrap:anywhere; }
+.work-state #status.error { color:#a02c26; }
+.work-state progress { appearance:none; display:block; width:100%; height:6px; margin:12px 0 0; border:0; border-radius:99px; overflow:hidden; background:#eef0f2; color:#3478f6; }
+.work-state progress::-webkit-progress-bar { background:#eef0f2; }
+.work-state progress::-webkit-progress-value { background:#3478f6; }
+.work-state progress::-moz-progress-bar { background:#3478f6; }
+.work-content { padding:0 24px 20px; }
+.work-content video, .work-content canvas { display:block; margin:12px auto 0; max-width:100%; }
+.work-footer { display:flex; flex-wrap:wrap; gap:12px; padding:20px 24px; border-top:1px solid #e4e6ea; }
+.work-footer > :is(button,a) { flex:1 1 110px; text-align:center; }
+.work-controls button, .work-footer > :is(button,a) {
+  min-height:42px; padding:9px 12px; border:1px solid #cdd5df; border-radius:14px; background:#fafbfc;
+  color:#22252b; font:inherit; font-size:14px; font-weight:650; text-decoration:none; cursor:pointer;
+}
+.work-controls button:hover:not(:disabled), .work-footer > :is(button,a):hover:not(:disabled) { background:#e6efff; border-color:#3478f6; }
+.work-card button:disabled { opacity:.42; cursor:not-allowed; }
+@media (max-width:760px) { .work-card { padding:0; } }
+</style>
+<style>
+main { width:100%; max-width:1280px; padding:30px 42px 42px; }
+main > header { margin:0 0 28px; }
+main > header h1 { font-size:clamp(28px,4vw,44px); line-height:1.12; font-weight:750; }
+#folder-hint { margin:16px 0 12px; }
+@media (max-width:760px) { main { padding:18px 16px 30px; } main > header { margin-bottom:22px; } }
+</style>
+<style data-media-home>
+.media-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.media-title-row h1 { min-width:0; overflow-wrap:anywhere; }
+.media-home {
+  display:inline-grid; place-items:center; flex:none; box-sizing:border-box;
+  width:44px; height:44px; border:1px solid var(--line,#e4e6ea); border-radius:13px;
+  background:var(--panel,#fff); color:inherit; text-decoration:none;
+}
+.media-home:hover { background:#e6efff; border-color:#3478f6; color:#2468e7; }
+.media-home:focus-visible { outline:2px solid #3478f6; outline-offset:3px; }
+.media-home[hidden] { display:none; }
+</style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="media-title-row"><h1>Image Numbering</h1><a class="media-home" href="index.html" aria-label="Media Tools 메인으로 이동" title="Media Tools 메인으로 이동"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5M5.5 9v11h13V9M10 20v-6h4v6"/></svg></a></div>
+    </header>
+    <input id="picker" type="file" webkitdirectory multiple hidden>
+    <button id="drop" class="drop file-picker" type="button"><strong>폴더 선택</strong></button>
+    <section class="work-card" aria-labelledby="numbering-title">
+      <header class="work-head">
+        <h2 id="numbering-title">폴더 순서 <span id="total" class="work-count" aria-live="polite">0개</span></h2>
+        <div class="work-controls">
+          <button id="add-folder" type="button">＋ 추가</button>
+          <button id="clear-folders" type="button" disabled>초기화</button>
+        </div>
+      </header>
+      <div class="work-state">
+        <p id="status" role="status"></p>
+        <progress id="progress" aria-label="ZIP 만들기 진행률" max="100" value="0"></progress>
+      </div>
+      <div class="work-content">
+        <p id="folder-hint" class="hint" hidden>위에서부터 처리하며, 각 폴더에서는 파일명 순서로 정렬합니다. 하위 폴더는 제외됩니다.</p>
+        <ol id="folders" role="list"></ol>
+      </div>
+      <div class="work-footer">
+        <button id="download" type="button" disabled>다운로드</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    "use strict";
+
+    const limit = 999;
+    const maxZipSize = 0xffffffff;
+    const imageExtensions = new Set(
+      "jpg jpeg jfif png apng gif webp bmp dib tif tiff svg svgz ico cur avif heic heif hif jxl jp2 j2k jpf jpx jpm jbig jb2 psd psb dng cr2 cr3 nef arw raf orf rw2 srw pef raw ppm pgm pbm pnm tga exr hdr".split(" ")
+    );
+    const compressibleExtensions = new Set("bmp dib svg ppm pgm pbm pnm tga".split(" "));
+    const compareNames = new Intl.Collator("ko", { numeric: true, sensitivity: "base" }).compare;
+    const encoder = new TextEncoder();
+    const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
+      let crc = index;
+      for (let bit = 0; bit < 8; bit++) {
+        crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+      }
+      return crc;
+    });
+
+    function numberLabel(number) {
+      return String(number).padStart(3, "0");
+    }
+
+    function extensionOf(file) {
+      const match = /\.([a-z0-9]+)$/i.exec(file.name);
+      return match?.[1] || "";
+    }
+
+    function orderedImages(files) {
+      return files.filter(file => {
+        const extension = extensionOf(file);
+        return extension && (imageExtensions.has(extension.toLowerCase()) || file.type.startsWith("image/"));
+      }).sort((left, right) => compareNames(left.name, right.name)
+        || (left.name < right.name ? -1 : Number(left.name > right.name)));
+    }
+
+    function planImages(folders) {
+      return folders.flatMap(folder => folder.files).map((file, index) => ({
+        file,
+        name: numberLabel(index + 1) + "." + extensionOf(file)
+      }));
+    }
+
+    function dosTimestamp(value) {
+      const date = new Date(value);
+      if (!Number.isFinite(date.getTime()) || date.getFullYear() < 1980) return [33, 0];
+      if (date.getFullYear() > 2107) return [0xff9f, 0xbf7d];
+      return [
+        ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
+        (date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)
+      ];
+    }
+
+    async function zipPayload(file) {
+      let crc = 0xffffffff;
+      const checksum = new TransformStream({
+        transform(chunk, controller) {
+          for (const byte of chunk) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+          controller.enqueue(chunk);
+        }
+      });
+      let compression;
+      if (compressibleExtensions.has(extensionOf(file).toLowerCase())) {
+        try {
+          compression = new CompressionStream("deflate-raw");
+        } catch {
+          // Older browsers can still create ZIP entries using the store method.
+        }
+      }
+      const stream = file.stream().pipeThrough(checksum);
+      let data = file;
+      let method = 0;
+      if (compression) {
+        const compressed = await new Response(stream.pipeThrough(compression)).blob();
+        if (compressed.size < file.size) {
+          data = compressed;
+          method = 8;
+        }
+      } else {
+        await stream.pipeTo(new WritableStream());
+      }
+      return { data, method, crc: (crc ^ 0xffffffff) >>> 0 };
+    }
+
+    async function makeZip(entries, onProgress = () => {}) {
+      if (!entries.length || entries.length > limit) {
+        throw new Error("이미지 1~999장을 선택해 주세요.");
+      }
+      const records = entries.map(({ name, file }) => ({ filename: encoder.encode(name), file }));
+      const directorySize = records.reduce((size, { filename }) => size + 46 + filename.length, 0);
+      const localHeaderSize = records.reduce((size, { filename }) => size + 30 + filename.length, 0);
+      const zipSize = records.reduce((size, { file }) => size + file.size, directorySize + localHeaderSize + 22);
+      if (zipSize >= maxZipSize) throw new Error("이미지와 ZIP 정보를 합친 크기가 4GiB 미만이어야 합니다.");
+
+      const contents = [];
+      const directory = [];
+      let offset = 0;
+      for (const [index, { filename, file }] of records.entries()) {
+        const { data, method, crc } = await zipPayload(file);
+        const [date, time] = dosTimestamp(file.lastModified);
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(6, 0x800, true);
+        local.setUint16(8, method, true);
+        local.setUint16(10, time, true);
+        local.setUint16(12, date, true);
+        local.setUint32(14, crc, true);
+        local.setUint32(18, data.size, true);
+        local.setUint32(22, file.size, true);
+        local.setUint16(26, filename.length, true);
+        contents.push(local.buffer, filename, data);
+
+        const central = new DataView(new ArrayBuffer(46));
+        central.setUint32(0, 0x02014b50, true);
+        central.setUint16(4, 20, true);
+        new Uint8Array(central.buffer, 6, 26).set(new Uint8Array(local.buffer, 4, 26));
+        central.setUint32(42, offset, true);
+        directory.push(central.buffer, filename);
+        offset += 30 + filename.length + data.size;
+        onProgress(index + 1);
+      }
+      const end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, entries.length, true);
+      end.setUint16(10, entries.length, true);
+      end.setUint32(12, directorySize, true);
+      end.setUint32(16, offset, true);
+      return new Blob([...contents, ...directory, end.buffer], { type: "application/zip" });
+    }
+
+    const drop = document.querySelector("#drop");
+    const picker = document.querySelector("#picker");
+    const download = document.querySelector("#download");
+    const status = document.querySelector("#status");
+    const progress = document.querySelector("#progress");
+    const total = document.querySelector("#total");
+    const list = document.querySelector("#folders");
+    const addFolder = document.querySelector("#add-folder");
+    const clearFolders = document.querySelector("#clear-folders");
+    const folderHint = document.querySelector("#folder-hint");
+    const folders = [];
+    let nextId = 1;
+    let busy = false;
+    let dragDepth = 0;
+
+    function announce(message, error = false) {
+      status.textContent = message;
+      status.classList.toggle("error", error);
+    }
+
+    function render() {
+      list.replaceChildren();
+      let count = 0;
+      for (const [index, folder] of folders.entries()) {
+        const row = document.createElement("li");
+        const order = document.createElement("span");
+        order.className = "index";
+        order.textContent = String(index + 1);
+        order.setAttribute("aria-hidden", "true");
+
+        const details = document.createElement("div");
+        const name = document.createElement("strong");
+        name.className = "folder-name";
+        name.textContent = folder.name;
+        const info = document.createElement("span");
+        info.className = "folder-detail";
+        const first = count + 1;
+        count += folder.files.length;
+        const range = first === count ? numberLabel(count) : numberLabel(first) + "–" + numberLabel(count);
+        info.textContent = count <= limit ? `${folder.files.length}장 · ${range}` : `${folder.files.length}장`;
+        details.append(name, info);
+
+        const controls = document.createElement("div");
+        controls.className = "controls";
+        for (const [action, label, description, disabled] of [
+          ["up", "↑", "위로 이동", index === 0],
+          ["down", "↓", "아래로 이동", index === folders.length - 1],
+          ["remove", "제거", "제거", false]
+        ]) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = label;
+          button.setAttribute("aria-label", `${folder.name} ${description}`);
+          button.title = description;
+          button.dataset.action = action;
+          button.dataset.id = folder.id;
+          button.disabled = busy || disabled;
+          controls.append(button);
+        }
+        row.append(order, details, controls);
+        list.append(row);
+      }
+      total.textContent = `${folders.length}개 · ${count}장`;
+      addFolder.disabled = busy;
+      clearFolders.disabled = busy || folders.length === 0;
+      folderHint.hidden = folders.length === 0;
+      download.disabled = busy || count === 0 || count > limit;
+      drop.disabled = busy;
+      return count;
+    }
+
+    function announceCount(count, message) {
+      if (count > limit) {
+        announce(`최대 ${limit}장까지 저장할 수 있습니다. 폴더를 제거해 이미지 수를 줄여 주세요.`, true);
+      } else {
+        announce(message);
+      }
+    }
+
+    list.addEventListener("click", event => {
+      const button = event.target.closest("button[data-action]");
+      if (!button || busy) return;
+      const { action, id } = button.dataset;
+      const index = folders.findIndex(folder => folder.id === Number(id));
+      const [folder] = folders.splice(index, 1);
+      if (action !== "remove") folders.splice(index + (action === "up" ? -1 : 1), 0, folder);
+      announceCount(render(), action === "remove" ? `${folder.name} 폴더를 제거했습니다.` : "폴더 순서를 변경했습니다.");
+      const focusId = action === "remove" ? folders[Math.min(index, folders.length - 1)]?.id : id;
+      const buttons = [...list.querySelectorAll(`button[data-id="${focusId}"]:enabled`)];
+      (buttons.find(item => item.dataset.action === action) || buttons[0] || add).focus();
+    });
+
+    async function addFolders(readFolders) {
+      if (busy) return;
+      busy = true;
+      render();
+      announce("폴더를 읽는 중입니다.");
+      try {
+        const { candidates, skipped } = await readFolders();
+        let added = 0;
+        let ignored = skipped;
+        for (const candidate of candidates) {
+          const files = orderedImages(candidate.files);
+          if (files.length) {
+            folders.push({ id: nextId++, name: candidate.name, files });
+            added++;
+          } else {
+            ignored++;
+          }
+        }
+        const message = added
+          ? `${added}개 폴더를 추가했습니다.` + (ignored ? ` 추가할 이미지가 없는 항목 ${ignored}개를 건너뛰었습니다.` : "")
+          : "추가할 이미지가 없습니다. 이미지가 바로 들어 있는 폴더를 선택해 주세요.";
+        announceCount(render(), message);
+      } catch (error) {
+        announce(`폴더를 읽을 수 없습니다. ${error.message}`, true);
+      } finally {
+        busy = false;
+        render();
+      }
+    }
+
+    drop.addEventListener("click", () => picker.click());
+    addFolder.addEventListener("click", () => picker.click());
+    clearFolders.addEventListener("click", () => {
+      if (busy) return;
+      folders.length = 0;
+      progress.value = 0;
+      render();
+      announce("");
+    });
+    picker.addEventListener("change", () => {
+      const files = [...picker.files];
+      picker.value = "";
+      if (!files.length) return;
+      const selected = new Map();
+      for (const file of files) {
+        const [name, ...path] = file.webkitRelativePath.split("/");
+        if (!selected.has(name)) selected.set(name, { name, files: [] });
+        if (path.length === 1) selected.get(name).files.push(file);
+      }
+      void addFolders(() => ({ candidates: [...selected.values()], skipped: 0 }));
+    });
+
+    async function readDirectory(entry) {
+      const reader = entry.createReader();
+      const files = [];
+      while (true) {
+        const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+        if (!batch.length) break;
+        const direct = await Promise.all(batch.filter(item => item.isFile).map(
+          item => new Promise((resolve, reject) => item.file(resolve, reject))
+        ));
+        files.push(...direct);
+      }
+      return { name: entry.name, files };
+    }
+
+    window.addEventListener("dragover", event => {
+      if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+    });
+    window.addEventListener("drop", event => {
+      if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+    });
+    drop.addEventListener("dragenter", event => {
+      if (!event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      if (++dragDepth === 1 && !busy) drop.classList.add("active");
+    });
+    drop.addEventListener("dragleave", () => {
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (!dragDepth) drop.classList.remove("active");
+    });
+    drop.addEventListener("dragover", event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = busy ? "none" : "copy";
+    });
+    drop.addEventListener("drop", event => {
+      event.preventDefault();
+      dragDepth = 0;
+      drop.classList.remove("active");
+      if (busy) return;
+      const items = [...event.dataTransfer.items].filter(item => item.kind === "file");
+      const directories = items.map(item => item.webkitGetAsEntry?.()).filter(entry => entry?.isDirectory);
+      if (!directories.length) {
+        announce("폴더를 끌어다 놓거나 ‘폴더 선택’ 버튼을 사용해 주세요.", true);
+        return;
+      }
+      void addFolders(async () => {
+        const candidates = [];
+        for (const directory of directories) candidates.push(await readDirectory(directory));
+        return { candidates, skipped: items.length - directories.length };
+      });
+    });
+
+    download.addEventListener("click", async () => {
+      if (busy) return;
+      const entries = planImages(folders);
+      busy = true;
+      render();
+      announce("ZIP 파일을 만드는 중입니다.");
+      progress.max = entries.length;
+      progress.value = 0;
+      try {
+        const zip = await makeZip(entries, completed => { progress.value = completed; });
+        const url = URL.createObjectURL(zip);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "numbered-images.zip";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        announce(`이미지 ${entries.length}장이 담긴 ZIP 다운로드를 시작했습니다.`);
+      } catch (error) {
+        announce(`ZIP 파일을 만들 수 없습니다. ${error.message}`, true);
+      } finally {
+        busy = false;
+        if (status.classList.contains("error")) progress.value = 0;
+        render();
+      }
+    });
+    render();
+  </script>
+<script>if(location.protocol==='file:')document.querySelectorAll('.media-home').forEach(link=>{link.hidden=true});</script></body>
+</html>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><script data-artifact-bridge>/* Media Tools artifact bridge: routes <a download> saves through the host's downloads capability.
+   Outside claude.ai (offline copies) it stays inactive and the browser's native download is used. */
+(function(){
+  if (window.__mtBridge) return; window.__mtBridge = true;
+  var blobs = new Map(), dl = null, queue = Promise.resolve();
+  var origCreate = URL.createObjectURL, origRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = function(o){ var u = origCreate.apply(URL, arguments); try { if (o instanceof Blob) blobs.set(u, o); } catch(e){} return u; };
+  URL.revokeObjectURL = function(u){ blobs.delete(u); return origRevoke.apply(URL, arguments); };
+  function init(){
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        window.claude.use('downloads').then(function(x){ dl = x; }, function(){ dl = null; });
+        return true;
+      }
+    } catch(e){}
+    return false;
+  }
+  if (!init()) { var tries = 0, t = setInterval(function(){ if (init() || ++tries > 40) clearInterval(t); }, 250); }
+  function toast(msg){
+    var el = document.getElementById('mt-bridge-toast');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'mt-bridge-toast'; el.setAttribute('role','status');
+      el.style.cssText = 'position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;background:rgba(33,39,52,.94);color:#fff;border-radius:14px;padding:12px 18px;max-width:min(90vw,460px);font:500 13px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.16);transition:opacity .16s;pointer-events:none';
+      (document.body || document.documentElement).appendChild(el);
+    }
+    el.textContent = msg; el.style.opacity = '1';
+    clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = '0'; }, 3600);
+  }
+  function nameFor(a){
+    var n = a.getAttribute('download');
+    if (!n) { try { n = decodeURIComponent(new URL(a.href, location.href).pathname.split('/').pop()); } catch(e){} }
+    return n || 'download';
+  }
+  function dataFrom(href){
+    var b = blobs.get(href);
+    if (b) return Promise.resolve(b);
+    if (/^data:/i.test(href)) {
+      var i = href.indexOf(','), meta = href.slice(5, i), body = href.slice(i + 1);
+      if (/;base64/i.test(meta)) {
+        var bin = atob(body), arr = new Uint8Array(bin.length);
+        for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+        return Promise.resolve(new Blob([arr]));
+      }
+      return Promise.resolve(new Blob([decodeURIComponent(body)]));
+    }
+    return fetch(href).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
+  }
+  var MSG = {
+    declined: '저장을 취소했습니다.',
+    rejected_extension: '이 파일 형식은 여기서 저장할 수 없습니다.',
+    extension_not_enabled: '이 파일 형식은 여기서 저장할 수 없습니다.',
+    too_large: '파일이 너무 커서 저장할 수 없습니다.',
+    rate_limited: '이전 저장 확인이 진행 중입니다. 잠시 후 다시 시도해 주세요.'
+  };
+  function save(a){
+    var href = a.href, name = nameFor(a), pending = dataFrom(href);
+    queue = queue.then(function(){
+      return pending.then(function(data){ return dl.save({ filename: name, data: data }); })
+        .then(function(){}, function(err){
+          var c = err && err.code;
+          toast(MSG[c] || ('파일을 저장하지 못했습니다' + (err && err.message ? ': ' + err.message : '.')));
+        });
+    });
+  }
+  function eligible(a){
+    return dl && a && a.hasAttribute && a.hasAttribute('download') && a.getAttribute('href');
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
+    if (!eligible(a) || e.defaultPrevented) return;
+    e.preventDefault(); e.stopImmediatePropagation(); save(a);
+  }, true);
+  var origClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function(){
+    if (eligible(this) && !this.isConnected) { save(this); return; }
+    return origClick.apply(this, arguments);
+  };
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Image Converter</title>
+<style>
+:root{color-scheme:light;--ink:#172b32;--muted:#60767e;--line:#dce6e7;--green:#08796c;--pale:#e8f5f0}*{box-sizing:border-box}body{margin:0;background:#f4f7f7;color:var(--ink);font:15px/1.6 'Segoe UI','Malgun Gothic',sans-serif}button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);padding:10px 17px;font-weight:600;transition:background .15s}button:hover:not(:disabled){background:#eef5f3}button:focus-visible,summary:focus-visible{outline:3px solid #19a998;outline-offset:4px}button:disabled{opacity:.42;cursor:not-allowed}.primary{background:var(--green);color:white;border-color:var(--green)}.primary:hover:not(:disabled){background:#056357}.shell{max-width:1160px;margin:auto;padding:28px 32px 40px}.top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:22px}.brand{font-weight:750;display:flex;gap:10px;align-items:center}.mark{display:grid;place-items:center;width:34px;height:34px;background:var(--ink);color:white;border-radius:10px}.badge{font-size:12px;letter-spacing:.04em;background:var(--pale);color:#126754;padding:5px 12px;border-radius:30px}.hero{padding:37px 0 26px}.eyebrow{color:var(--green);font-weight:700;font-size:12px;letter-spacing:.14em}h1{font-size:42px;letter-spacing:-1.5px;line-height:1.2;margin:10px 0 14px}h1 span{color:var(--green)}p{margin:0;color:var(--muted)}.features{display:flex;gap:10px;margin-top:19px;flex-wrap:wrap}.features span{font-size:12px;background:white;border:1px solid var(--line);border-radius:7px;padding:4px 10px}.drop{display:flex;width:100%;align-items:center;justify-content:center;flex-direction:column;gap:8px;border:2px dashed #9dbfba;background:#fafffd;padding:29px 18px;border-radius:16px;font-weight:400}.drop:hover:not(:disabled),.drop.drag{background:#e5f4ed;border-color:var(--green)}.upload{font-size:29px;color:var(--green);line-height:1.3}.drop strong{font-size:17px}.drop small{color:var(--muted)}.pick{margin-top:4px;color:var(--green);font-weight:700}.panel{margin-top:26px;background:white;border:1px solid var(--line);border-radius:16px;overflow:hidden}.panel-head{padding:20px 22px;display:flex;justify-content:space-between;align-items:center;gap:14px}.panel-head h2{font-size:17px;margin:0}.count{font-size:12px;background:#eff4f5;border-radius:6px;padding:3px 8px;margin-left:8px}.actions{display:flex;gap:8px;flex-wrap:wrap}.small{padding:7px 12px;font-size:13px}.progress-area{background:#f9fbfb;border-top:1px solid var(--line);padding:15px 22px}.progress-label{display:flex;justify-content:space-between;font-size:13px;gap:12px}.track{height:6px;background:#e4eeec;border-radius:20px;margin-top:10px;overflow:hidden}.fill{height:100%;background:var(--green);width:0;transition:width .2s}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;text-align:left;table-layout:fixed}th{font-size:12px;color:var(--muted);background:#f9fbfb;font-weight:500;padding:11px 20px;border-bottom:1px solid var(--line)}td{padding:17px 20px;border-bottom:1px solid #edf1f2;vertical-align:middle;font-size:13px}th:nth-child(1){width:34%}th:nth-child(2){width:16%}th:nth-child(3){width:13%}th:nth-child(4){width:17%}th:nth-child(5){width:20%}td strong{font-size:14px;font-weight:600;overflow-wrap:anywhere}.sub{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.state{display:inline-block;font-size:12px;background:#edf2f4;color:#526b77;padding:3px 9px;border-radius:6px;white-space:nowrap}.state.done{background:#e4f4eb;color:#116548}.state.error{background:#fff0ed;color:#a63b2b}.state.working{background:#e9f1ff;color:#2e589c}.row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.remove{padding:5px 10px;color:#6d7e84;font-size:18px;line-height:1.4}.download{font-size:12px;padding:7px 10px;color:var(--green)}.empty{text-align:center;padding:42px 20px;color:var(--muted)}.empty b{display:block;color:#425c65;margin-bottom:5px}.bottom{padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px}.bottom p{font-size:12px;max-width:560px}.notice{margin-top:14px;font-size:13px;color:#425f66;background:#eaf1f2;border-radius:9px;padding:11px 15px;white-space:pre-line;overflow-wrap:anywhere}.notice:empty{display:none}.notes{margin-top:20px;border:1px solid var(--line);border-radius:12px;padding:13px 18px;font-size:13px;color:var(--muted)}summary{cursor:pointer;color:#435e67;font-weight:600}.notes ul{padding-left:20px;margin-bottom:2px}.privacy{display:flex;gap:10px;margin-top:24px;font-size:12px;color:var(--muted)}.privacy b{color:var(--green)}[hidden]{display:none!important}@media(max-width:750px){.shell{padding:20px 16px}.hero{padding-top:28px}h1{font-size:34px}.panel-head,.bottom{align-items:flex-start;flex-direction:column}table{min-width:800px}.drop strong{font-size:14px}.bottom .actions{width:100%}.primary{flex:1}.badge{font-size:10px}.progress-label{flex-wrap:wrap}}
+</style>
+<style>
+/* Shared offline-safe design system */
+:root{color-scheme:light;--ink:#19283d;--muted:#586b80;--line:#dce4ef;--accent:#405bc2;--pale:#edf1ff;font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;background:#f5f7fb;color:var(--ink)}
+*{box-sizing:border-box}body.tool-page{margin:0;padding:0;background:#f5f7fb;color:var(--ink);font-size:16px;line-height:1.65}main,.shell{width:100%;max-width:1040px;margin:0 auto;padding:28px 24px 44px}.tool-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 30px;padding:0 0 20px;border-bottom:1px solid var(--line)}.tool-brand{font-weight:750;letter-spacing:-.035em;font-size:18px}.tool-home{color:var(--accent);font-size:14px;font-weight:650;text-decoration:none;background:none;padding:6px 0}.tool-heading{display:block;margin:0 0 28px}.tool-heading .eyebrow{color:var(--accent);font-size:14px;letter-spacing:.02em;font-weight:650}.tool-heading h1{font-size:clamp(28px,4vw,36px);line-height:1.3;letter-spacing:-.04em;color:var(--ink);margin:8px 0 10px}.tool-heading p{font-size:16px;color:var(--muted);margin:0;line-height:1.75}
+section,.panel{background:white;border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 24px #20335405;padding:24px;margin:20px 0}.panel{padding:0;overflow:hidden}.panel h2,section h2{font-size:20px;line-height:1.4;color:var(--ink)}h3{font-size:17px;color:var(--ink);margin:20px 0 10px}p,li{line-height:1.75}p,.muted,small,.sub{color:var(--muted)}.muted,small{font-size:14px}footer,.privacy{font-size:14px;color:var(--muted);margin:24px 0;text-align:left}.privacy b{color:var(--accent)}
+button,a.download,a.save{font:inherit;font-weight:650;font-size:15px;line-height:1.5;border-radius:10px;padding:11px 17px;box-shadow:none;cursor:pointer}button{background:white;color:var(--ink);border:1px solid #c9d4e4}button:hover:not(:disabled){background:#edf1ff;border-color:#a5b3e5}button.primary,a.download,a.save,#start,#download,#generate,#convert,#all{background:var(--accent);border:1px solid var(--accent);color:white;text-decoration:none}button.primary:hover:not(:disabled),a.download:hover,a.save:hover,#start:hover:not(:disabled),#generate:hover:not(:disabled),#convert:hover:not(:disabled){background:#30499f}button.secondary,#cancel{background:#edf1f8;border:1px solid var(--line);color:var(--ink)}button:disabled{opacity:.45;cursor:not-allowed}button.small{font-size:14px;padding:8px 12px}
+.drop{display:block;width:100%;border:2px dashed #b7c4e4;border-radius:14px;background:#f8faff;color:var(--ink);padding:28px 18px;text-align:center;box-shadow:none;margin:20px 0;cursor:pointer}.drop:hover:not(:disabled),.drop.drag,.drop.over{border-color:var(--accent);background:#eef2ff}.drop strong{font-size:17px}.drop .pick,.drop .upload{color:var(--accent)}input,select{font:inherit;font-size:16px;max-width:100%;color:var(--ink)}input[type=file]{display:block;width:100%;margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:#f8faff}input[type=file]::file-selector-button{border:0;border-radius:6px;background:#e5ebfb;color:#30499f;font:inherit;font-size:14px;font-weight:650;padding:8px 12px;margin-right:10px}input[type=number],select{padding:9px 11px;border:1px solid #c9d4e4;border-radius:8px;background:white!important;color:var(--ink)!important}select{width:100%;margin:8px 0 16px}label{color:var(--ink);font-size:15px;font-weight:600}progress{width:100%;accent-color:var(--accent)}.fill{background:var(--accent)}
+details,.notes{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:22px;background:#f9fbff;color:var(--muted)}summary{cursor:pointer;color:var(--ink);font-weight:650;font-size:15px;line-height:1.65}details[open]>summary{margin-bottom:18px}#subtitle-settings{margin-bottom:24px}#subtitle-settings summary span{font-size:13px;font-weight:500;color:var(--muted);margin-left:12px}#subtitle-settings>div{margin-top:20px}#subtitle-settings select{width:100%!important}#fontreport{overflow-wrap:anywhere}.overlay-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:14px 0;padding:16px;background:white;border:1px solid var(--line);border-radius:12px}.overlay-row>strong{grid-column:1/-1;overflow-wrap:anywhere}.overlay-row>label:first-of-type{grid-column:1/-1}.overlay-row label{font-size:13px}.overlay-row input[type=number]{display:block;width:100%;margin:6px 0 0}.overlay-row input[type=checkbox]{display:inline;width:auto;margin:0 8px 0 0}.overlay-row>button{grid-column:1/-1;justify-self:end;padding:7px 14px}#assetnote{white-space:pre-wrap;overflow-wrap:anywhere}.status,#status,.notice{padding:13px 16px;background:#edf2ff;border-radius:10px;color:#344d84;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.error,.status.error,#status.error{color:#a02f3d;background:#fff0f1}.state.done{color:#136548;background:#e8f6ef}th,td,.row-actions button{font-size:14px}.sub,.count,.state,.bottom p{font-size:13px}.panel-head,.bottom{padding:20px}.settings{background:#f4f7ff}.features span{font-size:13px;background:white;border:1px solid var(--line)}video,#preview{max-width:100%;border-radius:12px}*:focus-visible{outline:3px solid #7791e2;outline-offset:3px}[hidden]{display:none!important}
+@media(max-width:650px){main,.shell{padding:20px 16px 32px}.tool-nav{margin-bottom:24px}.tool-heading h1{font-size:28px}section{padding:18px}.tool-heading p{font-size:15px}.overlay-row{grid-template-columns:repeat(2,minmax(0,1fr))}.overlay-row>strong,.overlay-row>label:first-of-type,.overlay-row>button{grid-column:1/-1}.tool-nav .tool-brand{font-size:16px}.actions{gap:8px;flex-wrap:wrap}.actions button{flex-grow:1}details{padding:12px}}
+</style>
+
+
+
+
+<style data-frameclock-ui>
+/* Media Tools — shared, embedded into standalone offline editions. */
+:root{color-scheme:light;--bg:#f3f4f6;--base:#fafbfc;--panel:#ffffff;--control:#f0f1f3;--line:#e8eaee;--ink:#22252b;--muted:#737983;--accent:#3478f6;--pale:#f0f1f3;--orange:#3478f6;font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;background:var(--bg);color:var(--ink)}
+*{box-sizing:border-box}body,body.tool-page{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}main,.shell{width:100%;max-width:1240px;margin:0 auto;padding:18px 24px 32px}a{color:var(--accent)}h1,h2,h3,label{color:var(--ink)}h2,.panel h2,section h2{font-size:15px;letter-spacing:-.02em;margin:0}h3{font-size:14px}p,small,.muted,.sub,.helper,.caption,.aside-note,.about p,footer,.privacy{color:var(--muted)}p{line-height:1.65}.tool-nav,body>header{height:52px;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid var(--line);background:transparent;color:var(--ink)}body>header{max-width:1192px;margin:0 auto;padding:0 0}.nav-left{display:flex;align-items:center;gap:14px;min-width:0}.tool-brand,.brand{font-size:15px;font-weight:650;letter-spacing:-.02em;color:var(--ink)}.tool-home{display:grid;place-items:center;width:38px;min-height:38px;border:1px solid var(--line);background:var(--control);border-radius:7px;padding:0;color:var(--accent);text-decoration:none}.nav-meta{font-size:12px;color:var(--muted)}.tool-heading,.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+section,.panel,article{background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:none;margin:0 0 16px;padding:18px;min-width:0}.panel{overflow:hidden}.panel-head,.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:0}.panel-head h2{margin:0}.actions,.result-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:16px}.actions>div{display:flex;gap:8px;flex-wrap:wrap}
+button,a.download,a.save,a.primary,.primary,.secondary,.open-tool{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;font:inherit;font-size:14px;font-weight:600;line-height:1.4;padding:9px 14px;border:1px solid var(--line);border-radius:7px;background:var(--control);color:var(--ink);text-decoration:none;box-shadow:none;cursor:pointer;transition:background .12s,border-color .12s}button:hover:not(:disabled),a.secondary:hover,.tool-home:hover{background:#e8ebef;border-color:#cdd5df}button.primary,a.primary,a.download,a.save,#start,#generate,#convert,#all,#download,.open-tool{background:var(--accent);border-color:var(--accent);color:var(--base)}button.primary:hover:not(:disabled),a.primary:hover,a.download:hover,a.save:hover,#start:hover:not(:disabled),#generate:hover:not(:disabled),#convert:hover:not(:disabled),.open-tool:hover{background:#2468e7;color:var(--base)}button.secondary,#cancel{background:var(--control);color:var(--ink);border-color:var(--line)}button:disabled{opacity:.4;cursor:not-allowed}.small,button.small,.controls button{min-height:42px;padding:8px 11px;font-size:13px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+input,select,textarea{font:inherit;max-width:100%;accent-color:var(--accent);color:var(--ink)}input[type=number],input[type=datetime-local],select{min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--control)!important;color:var(--ink)!important;font-size:14px}input[type=file]{width:100%;border:1px solid var(--line);border-radius:7px;background:var(--control);color:var(--muted);padding:8px;margin:8px 0 14px;font-size:13px}input[type=file]::file-selector-button{font:inherit;color:var(--ink);background:#f0f1f3;border:1px solid #e8eaee;border-radius:5px;padding:8px 12px;margin-right:12px}select{width:100%;margin:6px 0 14px}label:not(.check){font-size:13px}label{font-weight:500}.check{font-size:13px;line-height:1.6}.check input{accent-color:var(--accent)}.check small{background:var(--control);color:var(--muted)}input[type=range]{accent-color:var(--accent)}fieldset{min-width:0}
+.drop,.dropzone{width:100%;min-height:140px;margin:0 0 16px;padding:20px;border:1px dashed #cdd5df;border-radius:8px;background:var(--base);color:var(--ink);text-align:center;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}.drop:hover:not(:disabled),.drop.drag,.drop.over,.dropzone.over{background:#e6efff;border-color:var(--accent)}.drop strong{font-size:14px}.drop .upload,.drop .pick{color:var(--accent)}.drop input[type=file]{max-width:520px;margin:0}.dropzone .micro{font-size:12px;color:var(--muted);margin:0}.dropzone .text-button{font-size:12px;background:transparent;border:0;color:var(--muted)}.file-symbol{border:0;background:none;color:var(--accent);width:auto;height:auto;font-size:26px;margin:0}
+details,.notes{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:16px 0;color:var(--muted)}summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}details[open]>summary{margin-bottom:16px}details p,details li{font-size:13px;line-height:1.75}details li{display:list-item;border:0;padding:0}#subtitle-settings{margin:0}#subtitle-settings>div{margin-top:16px}#subtitle-settings summary span{font-size:12px;color:var(--muted)}.overlay-row{background:var(--control);border:1px solid var(--line);border-radius:7px;padding:12px}.overlay-row input[type=number]{width:100%}#fontreport{overflow-wrap:anywhere}
+.status,#status,.notice,.error,.note{background:var(--control);color:var(--muted);border-radius:7px;padding:10px 12px;font-size:13px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}.notice:empty{display:none}.error,.status.error,#status.error{background:#fff0f1;color:#a02f3d;border:1px solid #f4cbd1}.status-line{margin-top:14px;color:var(--muted);font-size:13px}.status-line #status{padding:0;background:none}.status-dot,.status-line.busy .status-dot,.local i{background:var(--accent);animation:none}.state,.state.done,.tag,.tag.orange,.tag.green{color:var(--accent);background:var(--control);border:1px solid var(--line);font-size:12px;border-radius:5px}.state.error{color:#a02f3d}.count{color:var(--muted)}progress{width:100%;height:6px;accent-color:var(--accent);margin:14px 0 0;background:var(--control)}progress::-webkit-progress-bar{background:var(--control)}progress::-webkit-progress-value,.fill{background:var(--accent)}.track{background:var(--control)}.progress-area,.bottom{padding:16px 18px;background:var(--panel)}.progress-label,.progress-info{color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.bottom{border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.bottom .actions{margin:0}.bottom p{font-size:12px;margin:0}
+table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{border-bottom:1px solid var(--line);padding:12px 10px;color:var(--ink);font-size:13px;overflow-wrap:anywhere;text-align:left}th{color:var(--muted);font-weight:500;background:var(--base)}.table-wrap,.table-scroll{overflow:auto;max-width:100%}.row-actions{display:flex;flex-wrap:wrap;gap:6px}.row-actions button{font-size:12px;min-height:40px}.empty{padding:38px 16px;text-align:center;color:var(--muted);font-size:13px}.empty b{font-weight:500}video,canvas,#preview{max-width:100%;border-radius:7px}video{background:var(--base)}#video{width:100%;max-height:410px}.preview{background:var(--base);border:1px solid var(--line);box-shadow:none}.preview img{box-shadow:none}.preview-label{background:var(--control);color:var(--muted)}.filename-row strong{font-size:14px}.info-item strong{font-size:13px;color:var(--ink)}.info-item span,.filename-row p{font-size:12px;color:var(--muted)}.helper,.caption{font-size:12px;line-height:1.65}.helper.amber{color:var(--muted)}.divider{background:var(--line);margin:18px 0}.timestamp-card{background:var(--base);border:1px solid var(--line);padding:14px;margin:16px 0}.timestamp-card>span,.timestamp-card small{color:var(--muted);font-size:12px}.timestamp-card strong{font-size:20px;color:var(--ink)}.label-row output{color:var(--accent);font-size:12px}.encode{margin-top:18px;width:100%}.logs pre{color:var(--muted);font-size:12px}.logs summary,.about summary{color:var(--ink);font-size:13px}.logs summary span{color:var(--muted);font-size:12px}
+footer,.privacy{font-size:12px;text-align:left;margin:18px 0;color:var(--muted)}footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}footer>span{letter-spacing:0}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}.workspace section.left{border:0;background:none;padding:0;margin:0}.workspace aside{min-width:0}.workspace .panel{padding:18px;margin-bottom:16px}.local{color:var(--muted);font-size:12px}.offline-panel{padding:0;margin:0 0 16px;border:0;background:none;display:flex;justify-content:flex-end}.offline-panel a{min-height:36px;font-size:12px}.aside-note{padding:0}.aside-note p{font-size:12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0}.launcher{max-width:920px}.launcher .grid{margin-top:36px}.launcher article{padding:24px;margin:0;display:grid;grid-template-columns:48px 1fr;gap:18px;align-items:center}.tool-icon{display:grid;place-items:center;width:48px;height:48px;border:1px solid var(--line);border-radius:9px;background:var(--control);color:var(--accent)}svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.tool-icon svg{width:26px;height:26px}.launcher article h2{font-size:16px;margin:0}.launcher .card-actions{grid-column:1/-1;display:flex;gap:10px;align-items:center;margin-top:12px}.launcher .open-tool{flex:1}.offline-download{display:inline-flex!important;align-items:center;justify-content:center;width:42px;height:42px;padding:0!important;margin:0!important;border:1px solid var(--line);border-radius:7px;background:var(--control);color:var(--accent)}.offline-download:hover{background:#e8ebef}.launcher details{margin-top:24px}.launcher footer{margin-top:22px}
+.mp4-work{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}.mp4-work>.media-column{min-width:0}.mp4-work>.media-column>.drop{min-height:128px}.mp4-work .action-bar{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}.mp4-work #subtitle-settings{background:var(--base)}.merger-work{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}.merger-work #result{margin:0}.merger-work .settings{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--base);padding:12px;border:1px solid var(--line);border-radius:7px}.merger-work #gap{width:90px}.merger-work ol{list-style:none;padding:0;margin:14px 0}.merger-work li{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--ink)}.merger-work li img{width:72px;height:72px;background:var(--control)}.merger-work .name{font-size:13px}.merger-work .controls{display:flex;gap:6px}.merger-work li.target{box-shadow:inset 0 2px var(--accent)}.merger-work .preview{padding:10px;margin-top:12px}.merger-work #metadata{font-size:12px}#list .info{min-width:0;flex:1}.webp-list{padding:0}.webp-list .panel-head{padding:16px 18px;margin:0}.webp-list .sub{color:var(--muted)}[hidden]{display:none!important}
+@media(max-width:900px){.mp4-work,.merger-work{grid-template-columns:1fr}.workspace{grid-template-columns:minmax(0,1fr) 320px}.launcher .grid{margin-top:20px}}
+@media(max-width:760px){main,.shell{padding:12px 14px 24px}body>header{margin:0 14px}.workspace{grid-template-columns:1fr}.workspace aside{grid-row:auto}.grid{grid-template-columns:1fr}.launcher article{padding:18px}.launcher .grid{margin-top:16px}.tool-nav{margin-bottom:14px}.nav-meta{display:none}.panel,section,.workspace .panel{padding:14px}.mp4-work{gap:14px}.overlay-row{grid-template-columns:repeat(2,minmax(0,1fr))}.drop,.dropzone{min-height:128px;padding:16px}.actions{gap:8px}.actions button{flex-grow:1}.merger-work li{flex-wrap:wrap}.merger-work .controls{margin-left:auto}.webp-list .panel-head{padding:14px}.webp-list table,.webp-list tbody,.webp-list tr,.webp-list td{display:block;width:100%}.webp-list thead{display:none}.webp-list tr{padding:10px 14px;border-bottom:1px solid var(--line)}.webp-list td{border:0;padding:4px 0}.webp-list td:before{content:attr(data-label);color:var(--muted);font-size:12px;margin-right:8px}.webp-list .bottom .actions{width:100%}.timestamp-card strong{font-size:20px}.info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tool-brand{font-size:14px}.offline-panel{margin-bottom:12px}footer{font-size:12px}.tool-home{flex-shrink:0}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+:root{--green:var(--accent)}.count,.badge{background:var(--control);color:var(--muted)}button.download{color:var(--base);background:var(--accent);border-color:var(--accent)}.state.working{background:var(--control);color:var(--accent)}.empty b{color:var(--muted)}.privacy b{color:var(--accent)}.webp-list table{min-width:0}.tool-page>details{max-width:1192px;margin:16px auto}.tool-page>details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+
+body>.tool-nav{max-width:1192px;margin:0 auto;padding:0;height:56px}.number{touch-action:none;cursor:grab;user-select:none} @media(max-width:760px){body>.tool-nav{margin:0 14px}}
+
+/* Soft UI template v2: light-only workspace. */
+:root{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif}
+main,.shell{max-width:1280px;padding:30px 42px 42px}.tool-nav{height:64px;margin-bottom:34px}.tool-brand{font-size:19px;font-weight:750}.tool-home{border-radius:13px;width:42px;height:42px;background:#fff}.tool-heading{position:static!important;width:auto!important;height:auto!important;margin:0 0 28px!important;overflow:visible!important;clip:auto!important;white-space:normal!important}.tool-heading h1{font-size:34px;letter-spacing:-.045em;margin:0 0 10px;line-height:1.25}.tool-heading p{font-size:14px;margin:0;color:var(--muted)}
+section,.panel,article,.workspace .panel{border-radius:22px;padding:24px}h2,.panel h2,section h2{font-size:17px}button,a.download,a.save,a.primary,.primary,.secondary,.open-tool{border-radius:14px;font-weight:650}button.primary,a.primary,a.download,a.save,#start,#generate,#convert,#all,#download,.open-tool,button.download{color:#fff}button.primary:hover:not(:disabled),a.primary:hover,a.download:hover,a.save:hover,#start:hover:not(:disabled),#generate:hover:not(:disabled),#convert:hover:not(:disabled),.open-tool:hover{color:#fff}.drop,.dropzone{border-radius:18px;background:#fafbfc;min-height:166px}.drop strong{font-size:16px}input[type=number],input[type=datetime-local],input[type=file],select,textarea{border-radius:12px}.settings,.overlay-row,details,.notes,.status,#status,.notice,.preview{border-radius:14px}.webp-list{padding:0}.webp-list .panel-head{padding:22px 24px}.bottom,.progress-area{padding:20px 24px}.tool-page>details{max-width:1196px}.count{border-radius:7px}footer{margin-top:28px}
+@media(max-width:760px){main,.shell{padding:18px 16px 30px}.tool-nav{margin-bottom:26px;height:50px}.tool-brand{font-size:17px}.tool-heading h1{font-size:28px}.tool-heading{margin-bottom:22px!important}section,.panel,.workspace .panel{padding:18px}.webp-list{padding:0}.webp-list .panel-head{padding:18px}.tool-page>details{margin:16px}.drop,.dropzone{min-height:140px}}
+
+</style><style>
+:root{--green:var(--accent)}.count,.badge{background:var(--control);color:var(--muted)}button.download{color:var(--base);background:var(--accent);border-color:var(--accent)}.state.working{background:var(--control);color:var(--accent)}.empty b{color:var(--muted)}.privacy b{color:var(--accent)}.webp-list table{min-width:0}.tool-page>details{max-width:1192px;margin:16px auto}.tool-page>details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+</style><style>/* Hide the annotated presentation-only areas; retain runtime DOM hooks. */
+.tool-nav,.tool-heading>p,main>details,footer{display:none!important}
+.tool-heading{margin-top:0;padding-top:0}
+#drop>.upload,#drop>small,.bottom>p{display:none!important}
+</style><style data-ui-refinement>/* Shared WebP file-picker colors and interaction feedback. */
+button:not(.drop),a.item-action,a.download,a.save,a.primary,.open-tool{background:#fafbfc!important;color:#22252b!important;border-color:#cdd5df!important;transition:background .12s,border-color .12s,box-shadow .12s}
+button:not(.drop):hover:not(:disabled),a.item-action:hover,a.download:hover,a.save:hover,a.primary:hover,.open-tool:hover{background:#e6efff!important;border-color:#3478f6!important}
+button:not(.drop):active:not(:disabled),a.item-action:active,a.download:active,a.save:active{background:#d8e6ff!important}
+button:focus-visible,a.item-action:focus-visible,a.download:focus-visible,a.save:focus-visible{outline:2px solid #3478f6;outline-offset:3px}
+button:disabled{opacity:.4;cursor:not-allowed}
+input[type=file]::file-selector-button{background:#fafbfc;color:#22252b;border:1px solid #cdd5df;transition:background .12s,border-color .12s}
+input[type=file]::file-selector-button:hover{background:#e6efff;border-color:#3478f6}
+/* Keep action rows and live messages visually separate. */
+.actions,.result-actions,.row-actions,.controls{gap:12px;row-gap:12px}
+.actions>div{gap:12px;row-gap:12px}
+.actions+.status,.actions+#status,.actions+.notice,.actions+progress,progress+#status,progress+.status{margin-top:20px}
+.status,#status,.notice{line-height:1.75}
+.status:empty,#status:empty,.notice:empty{display:none}
+@media(max-width:760px){.actions,.result-actions{row-gap:14px}.actions+.status,.actions+#status,.actions+.notice,progress+#status{margin-top:20px}}
+</style><style data-media-home>
+.media-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.media-title-row h1 { min-width:0; overflow-wrap:anywhere; }
+.media-home {
+  display:inline-grid; place-items:center; flex:none; box-sizing:border-box;
+  width:44px; height:44px; border:1px solid var(--line,#e4e6ea); border-radius:13px;
+  background:var(--panel,#fff); color:inherit; text-decoration:none;
+}
+.media-home:hover { background:#e6efff; border-color:#3478f6; color:#2468e7; }
+.media-home:focus-visible { outline:2px solid #3478f6; outline-offset:3px; }
+.media-home[hidden] { display:none; }
+</style>
+</head>
+<body class="tool-page">
+<main class="shell">
+<header class="tool-heading"><div class="media-title-row"><h1>Image Converter</h1><a class="media-home" href="index.html" aria-label="Media Tools 메인으로 이동" title="Media Tools 메인으로 이동"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5M5.5 9v11h13V9M10 20v-6h4v6"/></svg></a></div><p>파일별 프레임 수에 따라 PNG 또는 GIF로 자동 변환합니다.</p></header>
+<input type="file" id="fileInput" accept=".webp,.jpg,.jpeg,.jfif,.png,.apng,.gif,.bmp,image/webp,image/jpeg,image/png,image/apng,image/gif,image/bmp" multiple hidden>
+<button id="drop" class="drop" type="button"><span class="upload" aria-hidden="true">⇧</span><strong>파일 선택</strong><small>WebP · JPEG · PNG/APNG · GIF · BMP</small></button>
+<div id="notice" class="notice" role="status" aria-live="polite"></div>
+<section class="panel webp-list" aria-label="변환 파일 목록">
+<div class="panel-head"><h2>변환 목록 <span id="count" class="count">0개</span></h2><div class="actions"><button id="add" class="small">＋ 추가</button><button id="clear" class="small" disabled>초기화</button></div></div>
+<div class="progress-area"><div class="progress-label"><span id="progressText" role="status" aria-live="polite">파일을 추가해 주세요.</span><span id="sizeText">원본 0 B · 결과 0 B</span></div><div id="progress" class="track" role="progressbar" aria-label="변환 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="fill" class="fill"></div></div></div>
+<div class="table-wrap"><table id="table" hidden><thead><tr><th>파일명</th><th>해상도</th><th>파일 크기</th><th>처리 상태</th><th>작업</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div id="empty" class="empty">변환 목록이 비어 있습니다.</div>
+<div class="bottom"><p>완료된 PNG·GIF는 저장할 때까지 임시 보관됩니다.<br>대량 작업은 나누어 변환하고, 저장 후 목록을 초기화해 주세요.</p><div class="actions"><button id="all" disabled>전체 저장</button><button id="stop" hidden>변환 중지</button><button id="convert" class="primary" disabled>재시도</button></div></div>
+</section>
+<details class="notes"><summary>지원 형식 · 다운로드 · 주의사항</summary><ul><li>여러 이미지 파일을 한꺼번에 추가하면 파일마다 프레임 수를 검사하고 자동으로 변환합니다. 정적·동적 이미지를 섞어 넣어도 각각 PNG·GIF로 처리합니다. 완료 후 개별 또는 모두 다운로드를 누르세요.</li><li>「모두 다운로드」는 파일을 순차적으로 요청합니다. Edge·Chrome에서 여러 파일 다운로드 허용을 요청하면 허용해 주세요. 누락된 파일은 개별 버튼으로 저장할 수 있습니다.</li><li>이미지는 한 장씩 처리합니다. 변환 중지는 프레임 사이에 적용됩니다. 오류 파일은 원인을 확인한 후 다시 변환할 수 있습니다.</li><li>1프레임 이미지는 PNG로 변환하며 원본 해상도와 투명도를 유지합니다. 애니메이션 표시가 있어도 실제 프레임이 1개면 PNG로 처리합니다. 2프레임 이상은 GIF로 저장합니다. 기존 애니메이션 GIF는 원본 그대로 저장합니다. WebP와 APNG의 원본 해상도를 유지하며, GIF가 표현할 수 있는 범위에서 반복 횟수를 반영합니다. 프레임 시간은 GIF의 0.01초 단위로 반올림합니다. 매우 짧은 프레임의 재생 속도는 뷰어에 따라 달라질 수 있습니다.</li><li>GIF는 제한된 색상과 완전 투명·불투명만 지원합니다. GIF를 새로 인코딩할 때는 252색 팔레트를 사용하므로 색상 변화나 계단 현상이 생길 수 있습니다. 반투명 픽셀은 흰색 배경과 합성하며, 투명도가 50% 미만인 픽셀은 완전 투명으로 처리합니다. 메타데이터는 복사하지 않습니다.</li><li>변환 결과는 원본보다 커질 수 있습니다. 큰 애니메이션은 시간이 오래 걸리며, 메모리 보호를 위해 파일당 누적 1억 픽셀까지 처리합니다. 중지는 프레임 사이에 적용됩니다.</li><li>매우 큰 이미지는 브라우저의 메모리 또는 Canvas 한도로 실패할 수 있습니다. 완료 파일의 총 크기만큼 임시 저장 공간이 필요합니다.</li><li>동일한 이름·크기·수정 시각의 파일은 중복으로 건너뜁니다. 출력 이름이 겹치면 (2), (3) 등을 붙입니다. 실제 저장 위치와 기존 파일 충돌 처리는 브라우저 설정을 따릅니다.</li><li>목록 초기화·파일 제거·페이지 닫기는 임시 변환 결과를 해제합니다. 원본 파일과 이미 다운로드한 파일은 삭제하지 않습니다.</li></ul></details>
+<footer class="privacy"><b aria-hidden="true">●</b><span>모든 이미지 변환은 이 브라우저 내부에서 처리됩니다.<br>선택한 이미지가 외부 서버로 전송되거나 업로드되지 않습니다.</span></footer>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let items=[], busy=false, downloading=false, stopRequested=false, nextId=0;
+const activeUrls=new Map();
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const formatBytes=n=>{if(!n)return '0 B';const u=['B','KB','MB','GB'];const k=Math.min(3,Math.floor(Math.log(n)/Math.log(1024)));return (n/1024**k).toLocaleString('ko-KR',{maximumFractionDigits:k?1:0})+' '+u[k];};
+const keyFor=f=>JSON.stringify([f.name,f.size,f.lastModified]);
+function announce(s){$('notice').textContent=s;}
+function outputName(name,format){const base=name.replace(/\.[^.]+$/,'')||'image';let result=base+'.'+format.toLowerCase(),n=2;const used=new Set(items.map(i=>i.output.toLowerCase()));while(used.has(result.toLowerCase()))result=base+' ('+(n++)+').'+format.toLowerCase();return result;}
+function releaseUrl(url){if(activeUrls.has(url)){clearTimeout(activeUrls.get(url).timer);URL.revokeObjectURL(url);activeUrls.delete(url);}}
+function releaseItem(item){for(const [url,entry] of activeUrls)if(entry.id===item.id)releaseUrl(url);item.blob=null;}
+function renderItem(item){const row=item.row;row.querySelector('.resolution').textContent=item.width?item.width.toLocaleString()+' × '+item.height.toLocaleString():'—';row.querySelector('.sizes').textContent=formatBytes(item.file.size);row.querySelector('.resultSize').textContent=item.blob?item.format+' '+formatBytes(item.blob.size):'';const badge=row.querySelector('.state');badge.className='state '+item.status;badge.textContent=({waiting:'대기 중',checking:'검사 중',working:'변환 중',done:'완료',error:'변환 실패'})[item.status];row.querySelector('.message').textContent=item.error||((item.animated?'동적':'정적')+' · '+item.frameCount+'프레임 → '+item.format);row.querySelector('.download').textContent=item.format+' 다운로드';row.querySelector('.download').hidden=!item.blob;row.querySelector('.download').disabled=busy||downloading;row.querySelector('.remove').disabled=busy||downloading;}
+function update(){const done=items.filter(i=>i.status==='done').length, errors=items.filter(i=>i.status==='error').length;const percent=items.length?Math.round((done+errors)/items.length*100):0;$('count').textContent=items.length+'개';$('table').hidden=!items.length;$('empty').hidden=!!items.length;$('progressText').textContent=items.length?`${done} / ${items.length} 변환 완료${errors?' · 오류 '+errors+'개':''}${busy?' · 처리 중':''}`:'파일을 추가해 주세요.';$('sizeText').textContent='원본 '+formatBytes(items.reduce((n,i)=>n+i.file.size,0))+' · 결과 '+formatBytes(items.reduce((n,i)=>n+(i.blob?.size||0),0));$('fill').style.width=percent+'%';$('progress').setAttribute('aria-valuenow',percent);for(const id of ['add','drop','fileInput'])$(id).disabled=busy||downloading;$('clear').disabled=busy||downloading||!items.length;$('convert').disabled=busy||downloading||!items.some(i=>i.status==='waiting'||i.status==='error');$('all').disabled=busy||downloading||!done;for(const item of items)renderItem(item);}
+function createRow(item){const row=document.createElement('tr');row.innerHTML='<td><strong class="filename"></strong><div class="sub output"></div></td><td class="resolution"></td><td><div class="sizes"></div><div class="sub resultSize"></div></td><td><span class="state"></span><div class="sub message"></div></td><td><div class="row-actions"><button class="download" hidden>다운로드</button><button class="remove" type="button">×</button></div></td>';row.querySelector('.filename').textContent=item.file.name;row.querySelector('.output').textContent='→ '+item.output;row.querySelector('.remove').setAttribute('aria-label',item.file.name+' 목록에서 제거');row.querySelector('.remove').onclick=()=>{if(busy||downloading)return;releaseItem(item);items=items.filter(i=>i!==item);row.remove();update();};row.querySelector('.download').onclick=()=>{if(!busy&&!downloading){download(item);announce(item.output+' 다운로드를 요청했습니다. 브라우저의 다운로드 목록을 확인해 주세요.');}};item.row=row;$('rows').append(row);}
+function inspectWebP(a){
+ if(a.length<12||chunkTag(a,0)!=='RIFF'||chunkTag(a,8)!=='WEBP')return null;
+ const end=new DataView(a.buffer).getUint32(4,true)+8;
+ if(end!==a.length)throw Error('WEBP 파일 길이가 올바르지 않습니다.');
+ const cs=chunks(a,12,end),frames=cs.filter(c=>c.tag==='ANMF'),vp=cs.find(c=>c.tag==='VP8X'),anim=cs.find(c=>c.tag==='ANIM');
+ if(frames.length&&(!vp||vp.data.length!==10||!anim||anim.data.length!==6||!(vp.data[0]&2)))throw Error('애니메이션 정보가 손상되었습니다.');
+ if(!frames.length&&(!cs.some(c=>c.tag==='VP8 '||c.tag==='VP8L')||(vp&&vp.data[0]&2)))throw Error('이미지 프레임이 없습니다.');
+ for(const f of frames){if(f.data.length<16)throw Error('프레임이 손상되었습니다.');const inner=chunks(f.data,16,f.data.length);if(!inner.some(c=>c.tag==='VP8 '||c.tag==='VP8L'))throw Error('프레임 이미지가 없습니다.');}
+ const frameCount=frames.length||1;
+ return {frameCount,width:vp&&vp.data.length===10?u24(vp.data,4)+1:0,height:vp&&vp.data.length===10?u24(vp.data,7)+1:0};
+}
+const pngSignature=[137,80,78,71,13,10,26,10];
+
+function readGIF(a){
+ const view=new DataView(a.buffer);
+ if(a.length<14)throw Error('GIF 헤더가 손상되었습니다.');
+ const width=view.getUint16(6,true),height=view.getUint16(8,true);
+ const tableSize=flags=>flags&128?3*(2<<(flags&7)):0;
+ let offset=13+tableSize(a[10]),frameCount=0;
+ function skipBlocks(){
+  while(offset<a.length){
+   const size=a[offset++];
+   if(!size)return;
+   offset+=size;
+  }
+  throw Error('GIF 데이터가 잘렸습니다.');
+ }
+ while(offset<a.length){
+  const marker=a[offset++];
+  if(marker===59&&frameCount&&width&&height)return {width,height,frameCount};
+  if(marker===33&&offset<a.length){
+   offset++;
+   skipBlocks();
+   continue;
+  }
+  if(marker!==44||offset+10>a.length)break;
+  offset+=9+tableSize(a[offset+8]);
+  if(offset>=a.length)break;
+  offset++; // LZW minimum code size
+  skipBlocks();
+  frameCount++;
+ }
+ throw Error('GIF 프레임을 읽을 수 없습니다.');
+}
+
+function readPNG(a,collect=false){
+ const view=new DataView(a.buffer);
+ if(a.length<33||view.getUint32(8)!==13||chunkTag(a,12)!=='IHDR')throw Error('PNG 헤더가 손상되었습니다.');
+ const header=a.subarray(16,29),width=view.getUint32(16),height=view.getUint32(20);
+ if(!width||!height)throw Error('PNG 해상도가 올바르지 않습니다.');
+ const frames=[],prefix=[];
+ let count=0,loops=0,sequence=0,seenIDAT=false,frame;
+ for(let offset=33;offset+12<=a.length;){
+  const size=view.getUint32(offset),tag=chunkTag(a,offset+4),start=offset+8;
+  offset+=size+12;
+  if(offset>a.length)break;
+  const data=a.subarray(start,start+size);
+  if(tag==='IEND'){
+   if(size||!seenIDAT||(count&&(frames.length!==count||frames.some(f=>!f.hasData))))break;
+   return {width,height,frameCount:count||1,kind:count?'apng':'png',frames,header,prefix,loops};
+  }
+  if(tag==='acTL'){
+   if(size!==8||count||seenIDAT)break;
+   count=view.getUint32(start);
+   loops=view.getUint32(start+4);
+   if(!count)break;
+  }else if(tag==='fcTL'){
+   if(!count||size!==26||view.getUint32(start)!==sequence++||(frame&&!frame.hasData))break;
+   const w=view.getUint32(start+4),h=view.getUint32(start+8);
+   const x=view.getUint32(start+12),y=view.getUint32(start+16);
+   const dispose=data[24],blend=data[25];
+   if(!w||!h||x+w>width||y+h>height||dispose>2||blend>1)break;
+   if(!seenIDAT&&(x||y||w!==width||h!==height))break;
+   frame={w,h,x,y,dispose,blend,defaultImage:!seenIDAT,hasData:false,parts:[],
+    ms:1000*view.getUint16(start+20)/(view.getUint16(start+22)||100)};
+   frames.push(frame);
+  }else if(tag==='IDAT'){
+   if(frame&&!frame.defaultImage)break;
+   seenIDAT=true;
+   if(frame){
+    frame.hasData=true;
+    if(collect)frame.parts.push(a.subarray(start-8,offset));
+   }
+  }else if(tag==='fdAT'){
+   if(!seenIDAT||!frame||frame.defaultImage||size<4||view.getUint32(start)!==sequence++)break;
+   frame.hasData=true;
+   if(collect)frame.parts.push(pngChunk('IDAT',data.subarray(4)));
+  }else if(collect&&!seenIDAT&&!['IHDR','eXIf'].includes(tag)){
+   prefix.push(a.subarray(start-8,offset));
+  }
+ }
+ throw Error('PNG 프레임 데이터가 손상되었습니다.');
+}
+
+const pngCRCTable=Uint32Array.from({length:256},(_,i)=>{
+ for(let bit=0;bit<8;bit++)i=(i>>>1)^((i&1)?0xedb88320:0);
+ return i;
+});
+function pngChunk(tag,data){
+ const bytes=new Uint8Array(data.length+12),view=new DataView(bytes.buffer);
+ view.setUint32(0,data.length);
+ bytes.set(Array.from(tag,c=>c.charCodeAt(0)),4);
+ bytes.set(data,8);
+ let crc=0xffffffff;
+ for(let i=4;i<bytes.length-4;i++)crc=(crc>>>8)^pngCRCTable[(crc^bytes[i])&255];
+ view.setUint32(bytes.length-4,crc^0xffffffff);
+ return bytes;
+}
+
+async function inspectHeader(file){
+ const a=new Uint8Array(await file.arrayBuffer());
+ const tag=a.length>=6?String.fromCharCode(...a.subarray(0,6)):'';
+ let kind,header;
+ if(a.length>=12&&chunkTag(a,0)==='RIFF'&&chunkTag(a,8)==='WEBP'){
+  kind='webp';
+  header=inspectWebP(a);
+ }else if(pngSignature.every((byte,i)=>a[i]===byte)){
+  header=readPNG(a);
+  kind=header.kind;
+ }else if(tag==='GIF87a'||tag==='GIF89a'){
+  kind='gif';
+  header=readGIF(a);
+ }else if(a[0]===255&&a[1]===216&&a[2]===255){
+  kind='jpeg';
+ }else if(a.length>=26&&a[0]===66&&a[1]===77){
+  kind='bmp';
+ }else{
+  return null;
+ }
+ const {frameCount=1,width=0,height=0}=header||{};
+ const animated=frameCount>=2;
+ return {kind,frameCount,width,height,animated,format:animated?'GIF':'PNG'};
+}
+
+async function drawAPNGFrame(ctx,source,frame){
+ const header=source.header.slice(),view=new DataView(header.buffer);
+ view.setUint32(0,frame.w);
+ view.setUint32(4,frame.h);
+ const blob=new Blob([Uint8Array.from(pngSignature),pngChunk('IHDR',header),...source.prefix,
+  ...frame.parts,pngChunk('IEND',new Uint8Array())],{type:'image/png'});
+ const bitmap=await decode(blob);
+ try{
+  if(!frame.blend)ctx.clearRect(frame.x,frame.y,frame.w,frame.h);
+  ctx.drawImage(bitmap.image||bitmap,frame.x,frame.y);
+ }finally{bitmap.close();}
+}
+
+async function toGIF(item){
+ if(item.kind==='gif')return item.file;
+ if(item.kind==='webp')return webpToGIF(item);
+ const {width,height,frameCount}=item;
+ if(width>65535||height>65535||width*height*frameCount>100000000){
+  throw Error('GIF 해상도 또는 누적 1억 픽셀 제한을 초과합니다.');
+ }
+ const source=readPNG(new Uint8Array(await item.file.arrayBuffer()),true);
+ const canvas=document.createElement('canvas');
+ canvas.width=width;
+ canvas.height=height;
+ try{
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(!ctx)throw Error('이미지를 처리할 수 없습니다.');
+  const loop=source.loops===1?null:source.loops===0?0:Math.min(65535,source.loops-1);
+  const writer=gifWriter(width,height,loop);
+  for(const [index,frame] of source.frames.entries()){
+   if(stopRequested)throw Error('중지됨');
+   const previous=frame.dispose===2?ctx.getImageData(frame.x,frame.y,frame.w,frame.h):null;
+   await drawAPNGFrame(ctx,source,frame);
+   writer.frame(ctx.getImageData(0,0,width,height).data,frame.ms);
+   if(previous)ctx.putImageData(previous,frame.x,frame.y);
+   if(frame.dispose===1)ctx.clearRect(frame.x,frame.y,frame.w,frame.h);
+   $('progressText').textContent=`${item.file.name} · ${index+1} / ${frameCount} 프레임`;
+   await pause(0);
+  }
+  return writer.finish();
+ }finally{canvas.width=0;canvas.height=0;}
+}
+
+async function decode(file){
+ try{return await createImageBitmap(file,{imageOrientation:'none'});}
+ catch(error){
+  if(!(file instanceof Blob))throw error;
+  const url=URL.createObjectURL(file);
+  try{
+   const image=new Image();
+   image.src=url;
+   await image.decode();
+   return {width:image.naturalWidth,height:image.naturalHeight,image,close(){}};
+  }finally{URL.revokeObjectURL(url);}
+ }
+}
+async function addFiles(files){if(busy||downloading)return;busy=true;update();const rejected=[],duplicates=[];let added=0,failed=0;try{for(const file of files){if(items.some(i=>i.key===keyFor(file))){duplicates.push(file.name);continue;}let header;try{header=await inspectHeader(file);}catch{header=null;}if(!header){rejected.push(file.name);continue;}const item={id:++nextId,key:keyFor(file),file,kind:header.kind,output:outputName(file.name,header.format),status:'checking',blob:null,width:header.width,height:header.height,frameCount:header.frameCount,format:header.format,animated:header.animated,error:''};items.push(item);createRow(item);update();added++;let bitmap;try{if(item.frameCount===1&&item.kind!=='apng'&&!(item.kind==='webp'&&item.width&&item.height)){bitmap=await decode(file);item.width=bitmap.width;item.height=bitmap.height;}item.status='waiting';}catch{item.status='error';item.error='이미지를 읽을 수 없습니다. 손상되었거나 지원되지 않는 이미지입니다.';failed++;}finally{bitmap?.close();}renderItem(item);await pause(0);}}finally{busy=false;update();}const short=arr=>arr.slice(0,5).join(', ')+(arr.length>5?' 외 '+(arr.length-5)+'개':'');announce(`${added}개 파일을 추가했습니다.${failed?' 읽기 오류 '+failed+'개는 목록에서 확인하세요.':''}${rejected.length?'\n지원되지 않거나 손상된 이미지 제외: '+short(rejected):''}${duplicates.length?'\n중복으로 건너뜀: '+short(duplicates):''}`);if(items.some(i=>i.status==='waiting'))await convert(true);}
+/* Standalone WebP demux/compositor and GIF89a encoder. No external requests. */
+function chunkTag(a,o){return String.fromCharCode(...a.subarray(o,o+4));}
+function u24(a,o){return a[o]|a[o+1]<<8|a[o+2]<<16;}
+function chunks(a,start,end){const out=[];const v=new DataView(a.buffer,a.byteOffset,a.byteLength);for(let o=start;o<end;){if(o+8>end)throw Error('WEBP 청크가 손상되었습니다.');const n=v.getUint32(o+4,true);if(o+8+n>end)throw Error('WEBP 데이터가 잘렸습니다.');out.push({tag:chunkTag(a,o),data:a.subarray(o+8,o+8+n)});o+=8+n+(n&1);}return out;}
+function frameWebP(data,w,h){if(w&&h&&chunks(data,0,data.length).some(c=>c.tag==='ALPH')){const ext=new Uint8Array(18+data.length);ext.set([86,80,56,88,10,0,0,0,16,0,0,0]);for(let i=0;i<3;i++){ext[12+i]=((w-1)>>(8*i))&255;ext[15+i]=((h-1)>>(8*i))&255;}ext.set(data,18);data=ext;}const a=new Uint8Array(12+data.length);a.set([82,73,70,70],0);new DataView(a.buffer).setUint32(4,a.length-8,true);a.set([87,69,66,80],8);a.set(data,12);return new Blob([a],{type:'image/webp'});}
+function gifWriter(w,h,loop){
+ const parts=[];let bytes=[];const put=(...v)=>bytes.push(...v);const word=v=>put(v&255,(v>>8)&255);const flush=()=>{if(bytes.length){parts.push(new Uint8Array(bytes));bytes=[];}};
+ put(71,73,70,56,57,97);word(w);word(h);put(247,0,0);put(0,0,0);
+ for(let r=0;r<6;r++)for(let g=0;g<7;g++)for(let b=0;b<6;b++)put(Math.round(r*255/5),Math.round(g*255/6),Math.round(b*255/5));for(let i=253;i<256;i++)put(0,0,0);
+ if(loop!==null){put(33,255,11,...Array.from('NETSCAPE2.0',x=>x.charCodeAt(0)),3,1);word(loop);put(0);}flush();
+ return {frame(rgba,ms){
+ const pixels=new Uint8Array(w*h);for(let i=0,j=0;i<rgba.length;i+=4,j++){const alpha=rgba[i+3]/255;if(alpha<.5){pixels[j]=0;continue;}const r=Math.round((rgba[i]*alpha+255*(1-alpha))*5/255),g=Math.round((rgba[i+1]*alpha+255*(1-alpha))*6/255),b=Math.round((rgba[i+2]*alpha+255*(1-alpha))*5/255);pixels[j]=1+(r*7+g)*6+b;}
+ put(33,249,4,9);word(Math.max(1,Math.min(65535,Math.round(ms/10))));put(0,0,44);word(0);word(0);word(w);word(h);put(0,8);flush();
+ // GIF LZW with a 256-entry global palette.
+ const out=[];let bits=0,acc=0,size=9,next=258,dict=new Map();
+ const code=n=>{acc|=n<<bits;bits+=size;while(bits>=8){out.push(acc&255);acc>>>=8;bits-=8;}};
+ code(256);let prefix=pixels[0];for(let i=1;i<pixels.length;i++){const value=pixels[i],key=prefix*256+value,found=dict.get(key);if(found!==undefined){prefix=found;continue;}code(prefix);if(next<4096){if(next===(1<<size)&&size<12)size++;dict.set(key,next++);}else{code(256);dict=new Map();size=9;next=258;}prefix=value;}code(prefix);if(next===(1<<size)&&size<12)size++;code(257);if(bits)out.push(acc&255);
+ const encoded=Uint8Array.from(out);for(let i=0;i<encoded.length;i+=255){parts.push(Uint8Array.of(Math.min(255,encoded.length-i)),encoded.subarray(i,i+255));}parts.push(Uint8Array.of(0));
+ },finish(){parts.push(Uint8Array.of(59));return new Blob(parts,{type:'image/gif'});}};
+}
+async function webpToGIF(item){
+ const a=new Uint8Array(await item.file.arrayBuffer());if(a.length<12||chunkTag(a,0)!=='RIFF'||chunkTag(a,8)!=='WEBP')throw Error('WEBP 파일이 아닙니다.');const end=new DataView(a.buffer).getUint32(4,true)+8;if(end>a.length)throw Error('WEBP 데이터가 잘렸습니다.');const cs=chunks(a,12,end),vp=cs.find(c=>c.tag==='VP8X'),anim=cs.find(c=>c.tag==='ANIM'),frames=cs.filter(c=>c.tag==='ANMF');
+ const canvas=document.createElement('canvas');canvas.width=item.width;canvas.height=item.height;const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)throw Error('이미지를 처리할 수 없습니다.');let writer;
+ try{
+ if(frames.length){if(!vp||vp.data.length<10||!anim||anim.data.length<6)throw Error('애니메이션 정보가 손상되었습니다.');const w=u24(vp.data,4)+1,h=u24(vp.data,7)+1;if(w!==item.width||h!==item.height)throw Error('WEBP 해상도 정보가 일치하지 않습니다.');if(w>65535||h>65535||w*h*frames.length>100000000)throw Error('누적 1억 픽셀 제한을 초과합니다. 더 작거나 짧은 WEBP를 선택해 주세요.');const loops=anim.data[4]|anim.data[5]<<8;writer=gifWriter(w,h,loops===1?null:loops===0?0:loops-1);
+ // Transparent canvas follows browser WebP composition; ANIM background is a hint.
+ for(let i=0;i<frames.length;i++){if(stopRequested)throw Error('중지됨');const f=frames[i].data;if(f.length<16)throw Error('프레임이 손상되었습니다.');const x=u24(f,0)*2,y=u24(f,3)*2,fw=u24(f,6)+1,fh=u24(f,9)+1,ms=u24(f,12),flags=f[15];if(x+fw>w||y+fh>h)throw Error('프레임 영역이 올바르지 않습니다.');const bitmap=await createImageBitmap(frameWebP(f.subarray(16),fw,fh),{imageOrientation:'none'});try{if(bitmap.width!==fw||bitmap.height!==fh)throw Error('프레임 크기가 일치하지 않습니다.');if(flags&2)ctx.clearRect(x,y,fw,fh);ctx.drawImage(bitmap,x,y);}finally{bitmap.close();}writer.frame(ctx.getImageData(0,0,w,h).data,ms);if(flags&1)ctx.clearRect(x,y,fw,fh);$('progressText').textContent=`${item.file.name} · ${i+1} / ${frames.length} 프레임`;await pause(0);}
+ }else{if(item.width*item.height>100000000)throw Error('이미지가 너무 큽니다.');const bitmap=await decode(item.file);try{ctx.drawImage(bitmap.image||bitmap,0,0);}finally{bitmap.close();}writer=gifWriter(item.width,item.height,null);writer.frame(ctx.getImageData(0,0,item.width,item.height).data,100);}
+ return writer.finish();
+ }finally{canvas.width=0;canvas.height=0;}
+}
+async function toPNG(item){
+ if(!item.width||!item.height){const bitmap=await decode(item.file);item.width=bitmap.width;item.height=bitmap.height;bitmap.close();}
+ if(item.width*item.height>100000000)throw Error('이미지가 너무 큽니다.');
+ const canvas=document.createElement('canvas');canvas.width=item.width;canvas.height=item.height;
+ try{const ctx=canvas.getContext('2d',{alpha:true});if(!ctx)throw Error('이미지 처리 화면을 만들 수 없습니다.');
+ const a=item.kind==='webp'?new Uint8Array(await item.file.arrayBuffer()):null;
+ const frames=a?chunks(a,12,a.length).filter(c=>c.tag==='ANMF'):[];let bitmap;
+ if(item.kind==='apng'){
+ const source=readPNG(new Uint8Array(await item.file.arrayBuffer()),true);
+ await drawAPNGFrame(ctx,source,source.frames[0]);
+ }else if(frames.length===1){const f=frames[0].data,x=u24(f,0)*2,y=u24(f,3)*2,w=u24(f,6)+1,h=u24(f,9)+1;
+ if(x+w>canvas.width||y+h>canvas.height)throw Error('프레임 영역이 올바르지 않습니다.');
+ bitmap=await createImageBitmap(frameWebP(f.subarray(16),w,h),{imageOrientation:'none'});try{ctx.drawImage(bitmap,x,y);}finally{bitmap.close();}
+ }else{bitmap=await decode(item.file);try{ctx.drawImage(bitmap.image||bitmap,0,0);}finally{bitmap.close();}}
+ return await new Promise((resolve,reject)=>canvas.toBlob(b=>b&&b.type==='image/png'?resolve(b):reject(Error('PNG 생성에 실패했습니다.')),'image/png'));
+ }finally{canvas.width=0;canvas.height=0;}
+}
+async function convert(auto=false){if(busy||downloading)return;const queue=items.filter(i=>i.status==='waiting'||(!auto&&i.status==='error'));if(!queue.length)return;busy=true;stopRequested=false;$('stop').hidden=false;$('stop').disabled=false;const batchNote=auto?$('notice').textContent+'\n':'';announce(batchNote+'파일별 자동 판정: 1프레임 → PNG · 2프레임 이상 → GIF');update();try{for(const item of queue){if(stopRequested)break;item.status='working';item.error='';update();await pause(0);try{item.blob=await (item.format==='GIF'?toGIF(item):toPNG(item));item.status='done';}catch(e){item.status=stopRequested?'waiting':'error';item.error=stopRequested?'':(e.message||'변환하지 못했습니다.');}finally{update();}await pause(0);}}finally{busy=false;$('stop').hidden=true;update();announce(batchNote+(stopRequested?'변환을 중지했습니다. 완료된 파일은 저장할 수 있으며 나머지는 다시 변환할 수 있습니다.':'변환 작업이 끝났습니다. 완료된 PNG·GIF를 다운로드해 주세요. 오류 파일이 있으면 해당 행을 확인하세요.'));}}
+function download(item){if(!item.blob)return;const url=URL.createObjectURL(item.blob);const timer=setTimeout(()=>releaseUrl(url),60000);activeUrls.set(url,{id:item.id,timer});const a=document.createElement('a');a.href=url;a.download=item.output;document.body.append(a);a.click();a.remove();}
+$('all').onclick=async()=>{if(busy||downloading)return;const ready=items.filter(i=>i.blob);if(!ready.length)return;downloading=true;update();try{for(let i=0;i<ready.length;i++){download(ready[i]);announce(`${i+1} / ${ready.length} 다운로드 요청 · 브라우저에서 여러 파일 다운로드를 허용해 주세요.`);await pause(650);}announce(`${ready.length}개 파일 다운로드를 요청했습니다. 실제 저장 결과는 브라우저의 다운로드 목록에서 확인하세요. 차단된 파일은 개별 다운로드 버튼으로 저장해 주세요.`);}finally{downloading=false;update();}};
+$('convert').onclick=()=>convert(false);$('stop').onclick=()=>{stopRequested=true;$('stop').disabled=true;announce('현재 프레임 처리가 끝나면 중지합니다.');};
+$('clear').onclick=()=>{if(busy||downloading)return;for(const item of items)releaseItem(item);items=[];$('rows').replaceChildren();$('fileInput').value='';announce('목록을 초기화했습니다. 새 이미지 파일을 추가할 수 있습니다.');update();};
+for(const id of ['add','drop'])$(id).onclick=()=>$('fileInput').click();
+$('fileInput').onchange=e=>{const files=Array.from(e.target.files);e.target.value='';void addFiles(files);};
+let dragDepth=0;document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>e.preventDefault());$('drop').addEventListener('dragenter',e=>{e.preventDefault();dragDepth++;if(!busy&&!downloading)$('drop').classList.add('drag');});$('drop').addEventListener('dragleave',()=>{if(--dragDepth<=0){dragDepth=0;$('drop').classList.remove('drag');}});$('drop').addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('drop').classList.remove('drag');if(!busy&&!downloading)void addFiles(Array.from(e.dataTransfer.files));});
+window.addEventListener('pagehide',()=>{for(const url of activeUrls.keys())releaseUrl(url);});
+update();
+</script>
+<script data-ui-only>(()=>{const slot=document.getElementById('ui-settings-slot'),settings=document.getElementById('subtitle-settings');if(slot&&settings){settings.open=false;slot.append(settings)}document.querySelectorAll('#table tbody tr').forEach(labelRow);const rows=document.getElementById('rows');if(rows)new MutationObserver(()=>rows.querySelectorAll('tr').forEach(labelRow)).observe(rows,{childList:true,subtree:true});function labelRow(row){const labels=['파일','해상도','크기','상태','작업'];[...row.children].forEach((td,i)=>{if(td.dataset.label!==labels[i])td.dataset.label=labels[i]})}})();</script><script>if(location.protocol==='file:')document.querySelectorAll('.media-home').forEach(link=>{link.hidden=true});</script></body>
+</html>
