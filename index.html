@@ -1,82 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><script data-artifact-bridge>/* Media Tools artifact bridge: routes <a download> saves through the host's downloads capability.
-   Outside claude.ai (offline copies) it stays inactive and the browser's native download is used. */
-(function(){
-  if (window.__mtBridge) return; window.__mtBridge = true;
-  var blobs = new Map(), dl = null, queue = Promise.resolve();
-  var origCreate = URL.createObjectURL, origRevoke = URL.revokeObjectURL;
-  URL.createObjectURL = function(o){ var u = origCreate.apply(URL, arguments); try { if (o instanceof Blob) blobs.set(u, o); } catch(e){} return u; };
-  URL.revokeObjectURL = function(u){ blobs.delete(u); return origRevoke.apply(URL, arguments); };
-  function init(){
-    try {
-      if (window.claude && typeof window.claude.use === 'function') {
-        window.claude.use('downloads').then(function(x){ dl = x; }, function(){ dl = null; });
-        return true;
-      }
-    } catch(e){}
-    return false;
-  }
-  if (!init()) { var tries = 0, t = setInterval(function(){ if (init() || ++tries > 40) clearInterval(t); }, 250); }
-  function toast(msg){
-    var el = document.getElementById('mt-bridge-toast');
-    if (!el) {
-      el = document.createElement('div'); el.id = 'mt-bridge-toast'; el.setAttribute('role','status');
-      el.style.cssText = 'position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;background:rgba(33,39,52,.94);color:#fff;border-radius:14px;padding:12px 18px;max-width:min(90vw,460px);font:500 13px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.16);transition:opacity .16s;pointer-events:none';
-      (document.body || document.documentElement).appendChild(el);
-    }
-    el.textContent = msg; el.style.opacity = '1';
-    clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = '0'; }, 3600);
-  }
-  function nameFor(a){
-    var n = a.getAttribute('download');
-    if (!n) { try { n = decodeURIComponent(new URL(a.href, location.href).pathname.split('/').pop()); } catch(e){} }
-    return n || 'download';
-  }
-  function dataFrom(href){
-    var b = blobs.get(href);
-    if (b) return Promise.resolve(b);
-    if (/^data:/i.test(href)) {
-      var i = href.indexOf(','), meta = href.slice(5, i), body = href.slice(i + 1);
-      if (/;base64/i.test(meta)) {
-        var bin = atob(body), arr = new Uint8Array(bin.length);
-        for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
-        return Promise.resolve(new Blob([arr]));
-      }
-      return Promise.resolve(new Blob([decodeURIComponent(body)]));
-    }
-    return fetch(href).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
-  }
-  var MSG = {
-    declined: '저장을 취소했습니다.',
-    rejected_extension: '이 파일 형식은 여기서 저장할 수 없습니다.',
-    extension_not_enabled: '이 파일 형식은 여기서 저장할 수 없습니다.',
-    too_large: '파일이 너무 커서 저장할 수 없습니다.',
-    rate_limited: '이전 저장 확인이 진행 중입니다. 잠시 후 다시 시도해 주세요.'
-  };
-  function save(a){
-    var href = a.href, name = nameFor(a), pending = dataFrom(href);
-    queue = queue.then(function(){
-      return pending.then(function(data){ return dl.save({ filename: name, data: data }); })
-        .then(function(){}, function(err){
-          var c = err && err.code;
-          toast(MSG[c] || ('파일을 저장하지 못했습니다' + (err && err.message ? ': ' + err.message : '.')));
-        });
-    });
-  }
-  function eligible(a){
-    return dl && a && a.hasAttribute && a.hasAttribute('download') && a.getAttribute('href');
-  }
-  document.addEventListener('click', function(e){
-    var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
-    if (!eligible(a) || e.defaultPrevented) return;
-    e.preventDefault(); e.stopImmediatePropagation(); save(a);
-  }, true);
-  var origClick = HTMLAnchorElement.prototype.click;
-  HTMLAnchorElement.prototype.click = function(){
-    if (eligible(this) && !this.isConnected) { save(this); return; }
-    return origClick.apply(this, arguments);
-  };
-})();
-</script><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#f3f4f6"><title>Media Tools</title><style>/* Softspace UI 2.0 | mobile-first sizing, desktop adaptive layout */
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#f3f4f6"><title>Media Tools</title><style>/* Softspace UI 2.0 | mobile-first sizing, desktop adaptive layout */
 :root {
   color-scheme: light;
   --canvas: #f3f4f6;
@@ -274,9 +196,11 @@ h1 { font-size: 36px; letter-spacing: -.058em; line-height: 1.2; margin: 10px 0 
   .mobile-filterbar { padding-inline: 12px; }
   .mobile-filter { padding-inline: 7px; }
 }
-@media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration: .01ms!important; animation-duration: .01ms!important; } }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration: .01ms; animation-duration: .01ms; } }
 
-a{text-decoration:none;color:inherit}.item-card{list-style:none}.item-title{letter-spacing:-.035em}.item-actions{display:flex;gap:7px;align-items:center}.download-action{min-width:44px;padding:0;display:grid;place-items:center}.tool-link{display:flex;align-items:center;justify-content:center}.sidebar-nav a{color:var(--text-secondary)}.brand-copy strong{letter-spacing:-.04em}.sidebar-hint p{color:#737983}.heading-description,.item-subtitle{color:#737983}@media(max-width:720px){.item-card{flex-wrap:wrap}.item-body{min-width:140px}.item-actions{margin-left:61px}.heading-description{display:block;margin-top:12px;line-height:1.7}.item-title{font-size:17px}.item-card{padding-block:18px}}</style><style>.main-content>.collection{margin-top:30px}.item-title{margin-bottom:0}@media(max-width:720px){.main-content>.collection{margin-top:24px}}</style><style>/* Requested launcher layout: 5px between rows, 1px separators. */
+a{text-decoration:none;color:inherit}.item-card{list-style:none}.item-title{letter-spacing:-.035em}.item-actions{display:flex;gap:7px;align-items:center}.download-action{min-width:44px;padding:0;display:grid;place-items:center}.tool-link{display:flex;align-items:center;justify-content:center}.sidebar-nav a{color:var(--text-secondary)}.brand-copy strong{letter-spacing:-.04em}.sidebar-hint p{color:#737983}.heading-description,.item-subtitle{color:#737983}@media(max-width:720px){.item-card{flex-wrap:wrap}.item-body{min-width:140px}.item-actions{margin-left:61px}.heading-description{display:block;margin-top:12px;line-height:1.7}.item-title{font-size:17px}.item-card{padding-block:18px}}
+.main-content>.collection{margin-top:30px}.item-title{margin-bottom:0}@media(max-width:720px){.main-content>.collection{margin-top:24px}}
+/* Requested launcher layout: 5px between rows, 1px separators. */
 .item-grid,.item-grid[data-view="list"]{grid-template-columns:minmax(0,1fr);gap:5px}
 .item-card{display:grid;grid-template-columns:var(--icon-size) minmax(0,1fr);column-gap:15px;row-gap:12px;position:relative}
 .item-card:not(:last-child)::after{content:"";position:absolute;height:1px;background:var(--line);left:18px;right:18px;bottom:-3px}
@@ -285,12 +209,11 @@ a{text-decoration:none;color:inherit}.item-card{list-style:none}.item-title{lett
 .item-actions .download-action{flex:0 0 44px;width:44px;min-width:44px}
 @media(max-width:720px){.item-grid,.item-grid[data-view="list"]{gap:5px}.item-card{column-gap:13px}.item-actions{margin-left:0}}
 @media(max-width:365px){.item-card{grid-template-columns:44px minmax(0,1fr);column-gap:10px}}
-</style><style data-ui-refinement>/* Shared WebP file-picker colors and interaction feedback. */
-button:not(.drop),a.item-action,a.download,a.save,a.primary,.open-tool{background:#fafbfc!important;color:#22252b!important;border-color:#cdd5df!important;transition:background .12s,border-color .12s,box-shadow .12s}
-button:not(.drop):hover:not(:disabled),a.item-action:hover,a.download:hover,a.save:hover,a.primary:hover,.open-tool:hover{background:#e6efff!important;border-color:#3478f6!important}
-button:not(.drop):active:not(:disabled),a.item-action:active,a.download:active,a.save:active{background:#d8e6ff!important}
+/* Shared WebP file-picker colors and interaction feedback. */
+button:not(.drop),a.item-action,a.download,a.save,a.primary,.open-tool{background:#fafbfc;color:#22252b;border-color:#cdd5df;transition:background .12s,border-color .12s,box-shadow .12s}
+button:not(.drop):hover:not(:disabled),a.item-action:hover,a.download:hover,a.save:hover,a.primary:hover,.open-tool:hover{background:#e6efff;border-color:#3478f6}
+button:not(.drop):active:not(:disabled),a.item-action:active,a.download:active,a.save:active{background:#d8e6ff}
 button:focus-visible,a.item-action:focus-visible,a.download:focus-visible,a.save:focus-visible{outline:2px solid #3478f6;outline-offset:3px}
 button:disabled{opacity:.4;cursor:not-allowed}
 input[type=file]::file-selector-button{background:#fafbfc;color:#22252b;border:1px solid #cdd5df;transition:background .12s,border-color .12s}
-input[type=file]::file-selector-button:hover{background:#e6efff;border-color:#3478f6}
-</style></head><body><div class="app-shell"><aside class="sidebar"><a class="brand brand-sidebar" href="index.html"><div class="brand-icon"><span></span><span></span></div><div class="brand-copy"><strong>Media Tools</strong><small>LOCAL WORKSPACE</small></div></a><div class="sidebar-section-title">도구 모음</div><nav class="sidebar-nav" aria-label="도구 탐색"><a class="nav-item" href="index.html" aria-current="page"><span>▦</span><span>전체 도구</span><span class="nav-count">5</span></a><a class="nav-item" href="webp-converter.html"><span aria-hidden="true">↗</span><span>Image Converter</span></a><a class="nav-item" href="image-vertical-merger.html"><span aria-hidden="true">↗</span><span>Image Vertical Merger</span></a><a class="nav-item" href="mp4.html"><span aria-hidden="true">↗</span><span>MP4 Converter</span></a><a class="nav-item" href="hancom-office-guide.html"><span aria-hidden="true">↗</span><span>Hancom Office Guide</span></a><a class="nav-item" href="image-numbering.html"><span aria-hidden="true">↗</span><span>Image Numbering</span></a></nav><div class="sidebar-spacer"></div><div class="sidebar-hint"><span class="hint-pill">내 기기에서 처리</span><strong>파일은 내 곁에 그대로.</strong><p>선택한 파일을 서버에 업로드하지 않고 브라우저 안에서 처리합니다.</p></div><div class="sidebar-bottom">가볍게, 간편하게.</div></aside><div class="workspace"><main class="main-content"><h1>Media Tools<span class="heading-dot">.</span></h1><div class="collection"><ul class="item-grid"><li class="item-card"><div class="item-logo tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m5 16 5-5 4 4 3-3 3 3M14 7h5m-2-2 2 2-2 2"/></svg></div><div class="item-body"><h2 class="item-title">Image Converter</h2></div><div class="item-actions"><a class="item-action tool-link" href="webp-converter.html" aria-label="Image Converter 실행">실행</a><a class="item-action download-action" href="webp-converter.html" download="webp-converter-offline.html" aria-label="Image Converter 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-teal" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="7" rx="2"/><rect x="5" y="15" width="14" height="7" rx="2"/><path d="M12 9v6m-3-3 3 3 3-3"/></svg></div><div class="item-body"><h2 class="item-title">Image Vertical Merger</h2></div><div class="item-actions"><a class="item-action tool-link" href="image-vertical-merger.html" aria-label="Image Vertical Merger 실행">실행</a><a class="item-action download-action" href="image-vertical-merger.html" download="image-vertical-merger-offline.html" aria-label="Image Vertical Merger 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3V9ZM4 2h5m-2-2 2 2-2 2M20 22h-5m2-2-2 2 2 2"/></svg></div><div class="item-body"><h2 class="item-title">MP4 Converter</h2></div><div class="item-actions"><a class="item-action tool-link" href="mp4.html" aria-label="MP4 Converter 실행">실행</a><a class="item-action download-action" href="mp4-offline.html" download="mp4-offline.html" aria-label="MP4 Converter 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 3v18M6 8h3M15 8h3"/></svg></div><div class="item-body"><h2 class="item-title">Hancom Office Guide</h2></div><div class="item-actions"><a class="item-action tool-link" href="hancom-office-guide.html" aria-label="Hancom Office Guide 실행">실행</a><a class="item-action download-action" href="hancom-office-guide.html" download="hancom-office-guide.html" aria-label="Hancom Office Guide 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-teal" aria-hidden="true"><span style="font-size:28px;font-weight:750">#</span></div><div class="item-body"><h2 class="item-title">Image Numbering</h2></div><div class="item-actions"><a class="item-action tool-link" href="image-numbering.html" aria-label="Image Numbering 실행">실행</a><a class="item-action download-action" href="image-numbering.html" download="image-numbering-offline.html" aria-label="Image Numbering 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li></ul></div></main></div></div></body></html>
+input[type=file]::file-selector-button:hover{background:#e6efff;border-color:#3478f6}</style></head><body><div class="app-shell"><aside class="sidebar"><a class="brand brand-sidebar" href="index.html"><div class="brand-icon"><span></span><span></span></div><div class="brand-copy"><strong>Media Tools</strong><small>LOCAL WORKSPACE</small></div></a><div class="sidebar-section-title">도구 모음</div><nav class="sidebar-nav" aria-label="도구 탐색"><a class="nav-item" href="index.html" aria-current="page"><span>▦</span><span>전체 도구</span><span class="nav-count">5</span></a><a class="nav-item" href="webp-converter.html"><span aria-hidden="true">↗</span><span>Image Converter</span></a><a class="nav-item" href="image-vertical-merger.html"><span aria-hidden="true">↗</span><span>Image Vertical Merger</span></a><a class="nav-item" href="mp4.html"><span aria-hidden="true">↗</span><span>MP4 Converter</span></a><a class="nav-item" href="hancom-office-guide.html"><span aria-hidden="true">↗</span><span>Hancom Office Guide</span></a><a class="nav-item" href="image-numbering.html"><span aria-hidden="true">↗</span><span>Image Numbering</span></a></nav><div class="sidebar-spacer"></div><div class="sidebar-hint"><span class="hint-pill">내 기기에서 처리</span><strong>파일은 내 곁에 그대로.</strong><p>선택한 파일을 서버에 업로드하지 않고 브라우저 안에서 처리합니다.</p></div><div class="sidebar-bottom">가볍게, 간편하게.</div></aside><div class="workspace"><main class="main-content"><h1>Media Tools<span class="heading-dot">.</span></h1><div class="collection"><ul class="item-grid"><li class="item-card"><div class="item-logo tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m5 16 5-5 4 4 3-3 3 3M14 7h5m-2-2 2 2-2 2"/></svg></div><div class="item-body"><h2 class="item-title">Image Converter</h2></div><div class="item-actions"><a class="item-action tool-link" href="webp-converter.html" aria-label="Image Converter 실행">실행</a><a class="item-action download-action" href="webp-converter.html" download="webp-converter-offline.html" aria-label="Image Converter 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-teal" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="7" rx="2"/><rect x="5" y="15" width="14" height="7" rx="2"/><path d="M12 9v6m-3-3 3 3 3-3"/></svg></div><div class="item-body"><h2 class="item-title">Image Vertical Merger</h2></div><div class="item-actions"><a class="item-action tool-link" href="image-vertical-merger.html" aria-label="Image Vertical Merger 실행">실행</a><a class="item-action download-action" href="image-vertical-merger.html" download="image-vertical-merger-offline.html" aria-label="Image Vertical Merger 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3V9ZM4 2h5m-2-2 2 2-2 2M20 22h-5m2-2-2 2 2 2"/></svg></div><div class="item-body"><h2 class="item-title">MP4 Converter</h2></div><div class="item-actions"><a class="item-action tool-link" href="mp4.html" aria-label="MP4 Converter 실행">실행</a><a class="item-action download-action" href="mp4-offline.html" download="mp4-offline.html" aria-label="MP4 Converter 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-blue" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 3v18M6 8h3M15 8h3"/></svg></div><div class="item-body"><h2 class="item-title">Hancom Office Guide</h2></div><div class="item-actions"><a class="item-action tool-link" href="hancom-office-guide.html" aria-label="Hancom Office Guide 실행">실행</a><a class="item-action download-action" href="hancom-office-guide.html" download="hancom-office-guide.html" aria-label="Hancom Office Guide 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li><li class="item-card"><div class="item-logo tone-teal" aria-hidden="true"><span style="font-size:28px;font-weight:750">#</span></div><div class="item-body"><h2 class="item-title">Image Numbering</h2></div><div class="item-actions"><a class="item-action tool-link" href="image-numbering.html" aria-label="Image Numbering 실행">실행</a><a class="item-action download-action" href="image-numbering.html" download="image-numbering-offline.html" aria-label="Image Numbering 오프라인 다운로드" title="오프라인 다운로드">↓</a></div></li></ul></div></main></div></div></body></html>

@@ -1,89 +1,10 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><script data-artifact-bridge>/* Media Tools artifact bridge: routes <a download> saves through the host's downloads capability.
-   Outside claude.ai (offline copies) it stays inactive and the browser's native download is used. */
-(function(){
-  if (window.__mtBridge) return; window.__mtBridge = true;
-  var blobs = new Map(), dl = null, queue = Promise.resolve();
-  var origCreate = URL.createObjectURL, origRevoke = URL.revokeObjectURL;
-  URL.createObjectURL = function(o){ var u = origCreate.apply(URL, arguments); try { if (o instanceof Blob) blobs.set(u, o); } catch(e){} return u; };
-  URL.revokeObjectURL = function(u){ blobs.delete(u); return origRevoke.apply(URL, arguments); };
-  function init(){
-    try {
-      if (window.claude && typeof window.claude.use === 'function') {
-        window.claude.use('downloads').then(function(x){ dl = x; }, function(){ dl = null; });
-        return true;
-      }
-    } catch(e){}
-    return false;
-  }
-  if (!init()) { var tries = 0, t = setInterval(function(){ if (init() || ++tries > 40) clearInterval(t); }, 250); }
-  function toast(msg){
-    var el = document.getElementById('mt-bridge-toast');
-    if (!el) {
-      el = document.createElement('div'); el.id = 'mt-bridge-toast'; el.setAttribute('role','status');
-      el.style.cssText = 'position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483647;background:rgba(33,39,52,.94);color:#fff;border-radius:14px;padding:12px 18px;max-width:min(90vw,460px);font:500 13px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.16);transition:opacity .16s;pointer-events:none';
-      (document.body || document.documentElement).appendChild(el);
-    }
-    el.textContent = msg; el.style.opacity = '1';
-    clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = '0'; }, 3600);
-  }
-  function nameFor(a){
-    var n = a.getAttribute('download');
-    if (!n) { try { n = decodeURIComponent(new URL(a.href, location.href).pathname.split('/').pop()); } catch(e){} }
-    return n || 'download';
-  }
-  function dataFrom(href){
-    var b = blobs.get(href);
-    if (b) return Promise.resolve(b);
-    if (/^data:/i.test(href)) {
-      var i = href.indexOf(','), meta = href.slice(5, i), body = href.slice(i + 1);
-      if (/;base64/i.test(meta)) {
-        var bin = atob(body), arr = new Uint8Array(bin.length);
-        for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
-        return Promise.resolve(new Blob([arr]));
-      }
-      return Promise.resolve(new Blob([decodeURIComponent(body)]));
-    }
-    return fetch(href).then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
-  }
-  var MSG = {
-    declined: '저장을 취소했습니다.',
-    rejected_extension: '이 파일 형식은 여기서 저장할 수 없습니다.',
-    extension_not_enabled: '이 파일 형식은 여기서 저장할 수 없습니다.',
-    too_large: '파일이 너무 커서 저장할 수 없습니다.',
-    rate_limited: '이전 저장 확인이 진행 중입니다. 잠시 후 다시 시도해 주세요.'
-  };
-  function save(a){
-    var href = a.href, name = nameFor(a), pending = dataFrom(href);
-    queue = queue.then(function(){
-      return pending.then(function(data){ return dl.save({ filename: name, data: data }); })
-        .then(function(){}, function(err){
-          var c = err && err.code;
-          toast(MSG[c] || ('파일을 저장하지 못했습니다' + (err && err.message ? ': ' + err.message : '.')));
-        });
-    });
-  }
-  function eligible(a){
-    return dl && a && a.hasAttribute && a.hasAttribute('download') && a.getAttribute('href');
-  }
-  document.addEventListener('click', function(e){
-    var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
-    if (!eligible(a) || e.defaultPrevented) return;
-    e.preventDefault(); e.stopImmediatePropagation(); save(a);
-  }, true);
-  var origClick = HTMLAnchorElement.prototype.click;
-  HTMLAnchorElement.prototype.click = function(){
-    if (eligible(this) && !this.isConnected) { save(this); return; }
-    return origClick.apply(this, arguments);
-  };
-})();
-</script>
+  <meta charset="utf-8"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png"><link rel="icon" type="image/x-icon" sizes="32x32 48x48" href="favicon.ico"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Image Numbering · Media Tools</title>
-  <style>
-    :root {
+  <style>:root {
       color-scheme: light;
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
       background: #f3f4f6;
@@ -182,8 +103,6 @@
       li { grid-template-columns: 1.4rem minmax(0, 1fr); }
       .controls { grid-column: 2; }
     }
-  </style>
-<style data-file-picker>
 #drop.file-picker {
   position: relative;
   display: grid;
@@ -232,10 +151,8 @@
 @media (prefers-reduced-motion: reduce) {
   #drop.file-picker { transition: none; }
 }
-</style>
-<style data-work-card>
 .work-card { display:block; padding:0; background:#fff; border:1px solid #e4e6ea; border-radius:22px; min-width:0; }
-.work-card [hidden] { display:none !important; }
+.work-card [hidden] { display:none; }
 .work-head { display:grid; justify-items:center; gap:20px; border-bottom:1px solid #e4e6ea; padding:20px 24px; }
 .work-head h2 { display:flex; align-items:center; gap:10px; margin:0; font-size:17px; }
 .work-count { display:inline-block; border-radius:8px; padding:4px 8px; background:#f0f1f3; color:#646a74; font-size:13px; font-weight:650; }
@@ -258,15 +175,11 @@
 .work-controls button:hover:not(:disabled), .work-footer > :is(button,a):hover:not(:disabled) { background:#e6efff; border-color:#3478f6; }
 .work-card button:disabled { opacity:.42; cursor:not-allowed; }
 @media (max-width:760px) { .work-card { padding:0; } }
-</style>
-<style>
 main { width:100%; max-width:1280px; padding:30px 42px 42px; }
 main > header { margin:0 0 28px; }
 main > header h1 { font-size:clamp(28px,4vw,44px); line-height:1.12; font-weight:750; }
 #folder-hint { margin:16px 0 12px; }
 @media (max-width:760px) { main { padding:18px 16px 30px; } main > header { margin-bottom:22px; } }
-</style>
-<style data-media-home>
 .media-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .media-title-row h1 { min-width:0; overflow-wrap:anywhere; }
 .media-home {
@@ -276,8 +189,11 @@ main > header h1 { font-size:clamp(28px,4vw,44px); line-height:1.12; font-weight
 }
 .media-home:hover { background:#e6efff; border-color:#3478f6; color:#2468e7; }
 .media-home:focus-visible { outline:2px solid #3478f6; outline-offset:3px; }
-.media-home[hidden] { display:none; }
-</style>
+.media-home[hidden] { display:none; }</style>
+
+
+
+
 </head>
 <body>
   <main>
