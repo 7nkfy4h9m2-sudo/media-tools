@@ -33,6 +33,19 @@ function mountOutput(FS, handle) {
   };
 }
 
+const ENGINE_PARTS=[[16777216,'4ccba0c9cc7f019751a958ead3918cf51c9563ff2f8a76fb1f72ae492f66693b'],[15455203,'80e8b2ae7994e92102e048249ab0a6673480ca626c359b1d321b24f105f02e65']];
+// The CDN copy must be byte-identical to the two original engine parts (SHA-256), otherwise it is never run.
+async function verifyEngine(buffer){
+ if(buffer.byteLength!==ENGINE_PARTS.reduce((n,[len])=>n+len,0))throw Error('변환 엔진 검증에 실패했습니다: 파일 크기가 원본과 다릅니다.');
+ let offset=0;
+ for(const [len,expected] of ENGINE_PARTS){
+  const digest=await crypto.subtle.digest('SHA-256',new Uint8Array(buffer,offset,len));offset+=len;
+  const actual=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(actual!==expected)throw Error('변환 엔진 검증에 실패했습니다: 내용이 원본과 다릅니다.');
+ }
+ return buffer;
+}
+
 async function loadCore(base, wasmModule) {
   // Reuse the engine the page already compiled: instantiation only, no second compile.
   if (wasmModule instanceof WebAssembly.Module) {
@@ -67,7 +80,7 @@ async function fetchWasm(base) {
     } catch (localError) {
       const response = await fetch(CDN_WASM);
       if (!response.ok) throw Error('소프트웨어 변환 엔진을 내려받지 못했습니다.');
-      wasmBinary = await response.arrayBuffer();
+      wasmBinary = await verifyEngine(await response.arrayBuffer());
     }
     return wasmBinary;
 }
