@@ -33,11 +33,26 @@ function mountOutput(FS, handle) {
   };
 }
 
-self.onmessage = async ({data: {file, outputHandle, mode}}) => {
-  let access;
-  try {
-    const base = new URL('./', self.location.href);
-    importScripts(new URL('ffmpeg-core.js', base).href);
+async function loadCore(base, wasmModule) {
+  // Reuse the engine the page already compiled: instantiation only, no second compile.
+  if (wasmModule instanceof WebAssembly.Module) {
+    try {
+      let fail;
+      const failed = new Promise((_, reject) => { fail = reject; });
+      const core = createFFmpegCore({
+        instantiateWasm(imports, receiveInstance) {
+          WebAssembly.instantiate(wasmModule, imports)
+            .then(instance => receiveInstance(instance, wasmModule), fail);
+          return {};
+        }
+      });
+      return await Promise.race([core, failed]);
+    } catch (reuseError) { /* fall through to the self-contained path */ }
+  }
+  return createFFmpegCore({wasmBinary: await fetchWasm(base)});
+}
+
+async function fetchWasm(base) {
     // Local split parts first; if they are absent (e.g. self-hosted copy without the
     // two wasm files), fall back to the identical upstream build on jsDelivr.
     const CDN_WASM = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm';
@@ -54,7 +69,15 @@ self.onmessage = async ({data: {file, outputHandle, mode}}) => {
       if (!response.ok) throw Error('소프트웨어 변환 엔진을 내려받지 못했습니다.');
       wasmBinary = await response.arrayBuffer();
     }
-    const core = await createFFmpegCore({wasmBinary});
+    return wasmBinary;
+}
+
+self.onmessage = async ({data: {file, outputHandle, mode, wasmModule}}) => {
+  let access;
+  try {
+    const base = new URL('./', self.location.href);
+    importScripts(new URL('ffmpeg-core.js', base).href);
+    const core = await loadCore(base, wasmModule);
     const {FS} = core;
     if (!FS.filesystems.WORKERFS) throw Error('파일 읽기 모듈을 사용할 수 없습니다.');
     FS.mkdir('/input');
