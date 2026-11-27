@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <title>M3U8 to MP4 · Media Tools</title>
 <style>
-/* M3U8 to MP4 (Media Tools) v1.1.0 — Media Tools index와 같은 라이트 고정 토큰 */
+/* M3U8 to MP4 (Media Tools) v1.2.0 — Media Tools index와 같은 라이트 고정 토큰 */
 :root{--bg:#f3f4f6;--surface:#FFFFFF;--surface-2:#f0f1f3;--text:#22252b;--text-2:#737983;--line:#e8eaee;
   --accent:#3478F6;--accent-text:#1F5FD6;--accent-soft:rgba(52,120,246,.10);--danger:#FF3B30;--ok:#1E8E3E;
   --ease:cubic-bezier(.2,0,0,1);--font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Segoe UI Variable","Malgun Gothic",sans-serif;color-scheme:light}
@@ -42,6 +42,19 @@ button:disabled{opacity:.4;cursor:default;transform:none}
 .steps{margin:12px 0 0;padding-left:20px;font-size:13px;color:var(--text-2);display:grid;gap:4px}.steps b{color:var(--text);font-weight:600}
 .bm{cursor:grab}
 textarea.code{width:100%;height:84px;margin-top:10px;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface-2);color:var(--text);resize:vertical}
+.pv{display:grid;grid-template-columns:168px minmax(0,1fr);gap:12px;align-items:start;margin-top:12px}.pv .chips{margin-top:0}
+.thumb{position:relative;aspect-ratio:16/9;border-radius:12px;background:var(--surface-2);overflow:hidden;display:grid;place-items:center;color:var(--text-2);font-size:12px;text-align:center;padding:4px}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb.loading{animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{opacity:.55}}
+.cands{display:grid;gap:10px}
+.cand{display:grid;grid-template-columns:168px minmax(0,1fr);gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px}
+.cand.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.cand .tg{font-size:12px;color:var(--text-2)}.cand .ci{font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}.cand .ci.bad{color:var(--danger)}
+.cand .cu{font-size:12px;color:var(--text-2);word-break:break-all;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cand button{margin-top:8px;min-height:40px}
+.card h2 .x{margin-left:auto}
+@media (max-width:600px){.pv,.cand{grid-template-columns:120px minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.thumb.loading{animation:none}}
 .note{font-size:13px;color:var(--accent-text);min-height:20px;margin-top:8px}
 .err{margin:10px 0 0;color:var(--danger);font-size:13px;white-space:pre-line}
 .warn{margin:10px 0 0;color:var(--text);font-size:13px;background:var(--surface-2);border-radius:10px;padding:10px 12px}
@@ -78,9 +91,14 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
 <header class="top">
   <a class="back" href="index.html" aria-label="Media Tools로 돌아가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Media Tools</a><span class="sep" aria-hidden="true"></span>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg>
-  <h1>M3U8 to MP4</h1><span class="ver">v1.1.0</span>
+  <h1>M3U8 to MP4</h1><span class="ver">v1.2.0</span>
 </header>
 <main>
+  <section class="card" id="candCard" hidden>
+    <h2>찾은 주소 <span class="opt" id="candCount"></span><button class="icon x" id="candClose" type="button" aria-label="목록 닫기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h2>
+    <div class="cands" id="cands"></div>
+    <p class="hint">장면과 길이를 보고 받을 주소를 선택하세요. 미리보기는 중간 앞부분의 세그먼트 1개만 받아 만듭니다.</p>
+  </section>
   <section class="card">
     <h2><span class="n">1</span>스트림 주소</h2>
     <form class="row" id="srcForm">
@@ -108,7 +126,7 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
         <label class="field" id="varWrap">화질<select id="variant"></select></label>
         <label class="field" id="audWrap">음성<select id="audio"></select></label>
       </div>
-      <div class="chips" id="chips"></div>
+      <div class="pv"><div class="thumb" id="thumb"></div><div class="chips" id="chips"></div></div>
       <p class="warn" id="srcWarn" hidden></p>
     </div>
   </section>
@@ -136,6 +154,7 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
     </div>
     <div class="prog" id="prog" hidden><i id="bar"></i></div>
     <div class="status" id="status" aria-live="polite"></div>
+    <p class="hint" id="runHint" hidden>받는 동안 이 화면을 켜 두세요. iPhone·iPad에서 다른 앱으로 전환하거나 화면이 꺼지면 다운로드가 멈출 수 있습니다.</p>
     <p class="err" id="runErr" hidden></p>
     <div class="result" id="result" hidden>
       <span class="ok" id="resText"></span>
@@ -162,21 +181,50 @@ const show = (el, msg) => { el.textContent = msg || ''; el.hidden = !msg; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 class UserError extends Error {}
 
+const STALL_MS = 20000;   // 이 시간 동안 데이터가 한 바이트도 오지 않으면 요청을 끊고 다시 시도
+class StallError extends Error { constructor() { super('서버 응답이 멈춤'); this.name = 'StallError'; } }
 async function fetchBuf(url, range, signal, asText) {
-  let res;
+  const local = new AbortController();
+  const onAbort = () => local.abort();
+  if (signal) { if (signal.aborted) throw new DOMException('', 'AbortError'); signal.addEventListener('abort', onAbort, { once:true }); }
+  let stalled = false, timer;
+  const arm = () => { clearTimeout(timer); timer = setTimeout(() => { stalled = true; local.abort(); }, STALL_MS); };
   const headers = range ? { Range: `bytes=${range[0]}-${range[0]+range[1]-1}` } : undefined;
-  try { res = await fetch(url, { headers, signal, credentials:'omit', cache:'no-store' }); }
-  catch (e) {
-    if (e.name === 'AbortError') throw e;
-    throw new UserError('서버에 연결하지 못했습니다.\n주소가 맞다면 서버가 다른 사이트의 요청을 막고 있는(CORS) 경우로, 브라우저 웹앱으로는 받을 수 없습니다.');
-  }
-  if (!res.ok) throw new UserError(`서버가 요청을 거부했습니다 (HTTP ${res.status}).` + (res.status === 403 || res.status === 401 ? '\n주소가 만료됐거나 로그인·리퍼러 확인이 필요한 스트림일 수 있습니다.' : ''));
-  return asText ? res.text() : new Uint8Array(await res.arrayBuffer());
+  try {
+    arm();
+    let res;
+    try { res = await fetch(url, { headers, signal:local.signal, credentials:'omit', cache:'no-store' }); }
+    catch (e) {
+      if (stalled) throw new StallError();
+      if (e.name === 'AbortError') throw e;
+      throw new UserError('서버에 연결하지 못했습니다.\n주소가 맞다면 서버가 다른 사이트의 요청을 막고 있는(CORS) 경우로, 브라우저 웹앱으로는 받을 수 없습니다.');
+    }
+    if (!res.ok) throw new UserError(`서버가 요청을 거부했습니다 (HTTP ${res.status}).` + (res.status === 403 || res.status === 401 ? '\n주소가 만료됐거나 로그인·리퍼러 확인이 필요한 스트림일 수 있습니다.' : ''));
+    const chunks = []; let size = 0;
+    try {
+      if (res.body && res.body.getReader) {
+        const rd = res.body.getReader();
+        for (;;) { arm(); const { done, value } = await rd.read(); if (done) break; chunks.push(value); size += value.byteLength; }
+      } else { const b = new Uint8Array(await res.arrayBuffer()); chunks.push(b); size = b.byteLength; }
+    } catch (e) {
+      if (stalled) throw new StallError();
+      if (e.name === 'AbortError') throw e;
+      throw new Error('받는 도중 연결이 끊김');
+    }
+    const out = chunks.length === 1 ? chunks[0] : new Uint8Array(size);
+    if (chunks.length !== 1) { let o = 0; for (const c of chunks) { out.set(c, o); o += c.byteLength; } }
+    return asText ? new TextDecoder().decode(out) : out;
+  } finally { clearTimeout(timer); if (signal) signal.removeEventListener('abort', onAbort); }
 }
-async function withRetry(fn, signal) {
+async function withRetry(fn, signal, onRetry, tries = 3) {
   for (let i = 0; ; i++) {
     try { return await fn(); }
-    catch (e) { if (e.name === 'AbortError' || signal?.aborted || i >= 3) throw e; await sleep(600 * 2 ** i); }
+    catch (e) {
+      if (e.name === 'AbortError' || signal?.aborted || i >= tries) throw e;
+      const wait = Math.min(1000 * 2 ** i, 8000);
+      onRetry && onRetry(i + 1, e);
+      await new Promise((ok, no) => { const t = setTimeout(ok, wait); signal && signal.addEventListener('abort', () => { clearTimeout(t); no(new DOMException('', 'AbortError')); }, { once:true }); });
+    }
   }
 }
 
@@ -281,7 +329,8 @@ $('audio').addEventListener('change', () => { show($('srcErr')); pickAudio(); })
 function renderInfo(loading) {
   $('info').hidden = false;
   const m = state.media, chips = [], warns = [];
-  if (loading || !m) { $('chips').innerHTML = '<span class="chip">재생목록 불러오는 중…</span>'; $('srcWarn').hidden = true; updateRun(); return; }
+  if (loading || !m) { $('chips').innerHTML = '<span class="chip">재생목록 불러오는 중…</span>'; $('srcWarn').hidden = true; setThumb($('thumb'), null); updateRun(); return; }
+  showPreview($('thumb'), m);
   const v = state.master ? state.master.variants[+$('variant').value] : null;
   if (v && v.res) chips.push(['해상도', v.res]);
   chips.push(['길이', fmtDur(m.dur)], ['세그먼트', m.segs.length + '개'], ['형식', m.fmp4 ? 'fMP4' : 'MPEG-TS'], ['암호화', m.enc ? 'AES-128' : '없음']);
@@ -295,6 +344,94 @@ function renderInfo(loading) {
   show($('srcWarn'), warns.join('\n')); $('srcWarn').style.whiteSpace = 'pre-line';
   updateRun();
 }
+/* ---------- 미리보기 (세그먼트 1개만 받아 한 장면 추출, 결과 MP4와 무관) ---------- */
+const previewCache = new Map(); let prevSeq = 0;
+function makePreview(pl) {
+  const n = pl.segs.length, s = pl.segs[Math.min(n - 1, Math.floor(n * 0.1))];
+  const ck = s.uri + '|' + (s.range || '');
+  if (previewCache.has(ck)) return previewCache.get(ck);
+  const job = (async () => {
+    if (pl.drm) return { msg:'DRM 스트림' };
+    const parts = [];
+    if (s.map) parts.push(await getPart(s.map.uri, s.map.range, s.map.key && s.map.key.iv ? s.map.key : null, 0));
+    parts.push(await getPart(s.uri, s.range, s.key, s.seq));
+    const buf = new Uint8Array(parts.reduce((a, b) => a + b.byteLength, 0)); let o = 0;
+    for (const x of parts) { buf.set(x, o); o += x.byteLength; }
+    const kind = sniff(buf);
+    if (kind === 'aac') return { msg:'음성 전용' };
+    const ff = await getFF(() => {});
+    const id = ++prevSeq, inN = `pv${id}.bin`, outN = `pv${id}.jpg`;
+    await ff.writeFile(inN, buf);
+    try {
+      const code = await ff.exec(['-hide_banner', '-f', kind, '-i', inN, '-map', '0:v:0', '-frames:v', '1', '-vf', 'scale=480:-2', '-q:v', '5', outN]);
+      if (code !== 0) return { msg:'영상 없음' };
+      return { url:URL.createObjectURL(new Blob([await ff.readFile(outN)], { type:'image/jpeg' })) };
+    } finally { for (const f of [inN, outN]) { try { await ff.deleteFile(f); } catch {} } }
+  })();
+  previewCache.set(ck, job);
+  job.catch(() => previewCache.delete(ck));
+  return job;
+}
+function setThumb(box, r) {
+  box.classList.toggle('loading', r === 'loading');
+  box.replaceChildren();
+  if (r === 'loading') box.textContent = '미리보기…';
+  else if (r && r.url) { const im = new Image(); im.alt = '미리보기'; im.src = r.url; box.appendChild(im); }
+  else if (r) box.textContent = r.msg || '미리보기 없음';
+}
+async function showPreview(box, pl) {
+  const tok = (box.dataset.tok = String(++prevSeq));
+  setThumb(box, 'loading');
+  let r;
+  try { r = await makePreview(pl); } catch (e) { r = { msg:'미리보기를 만들 수 없음' }; log('[미리보기] ' + e.message); }
+  if (box.dataset.tok === tok) setThumb(box, r);
+}
+
+/* ---------- 북마클릿에서 넘어온 여러 주소 비교 ---------- */
+let candTok = 0;
+async function showCandidates(list) {
+  const tok = ++candTok;
+  $('candCard').hidden = false; $('candCount').textContent = list.length + '개';
+  $('cands').replaceChildren();
+  const rows = list.map(c => {
+    const row = document.createElement('div'); row.className = 'cand';
+    const th = document.createElement('div'); th.className = 'thumb loading'; th.textContent = '대기 중';
+    const body = document.createElement('div');
+    const tg = document.createElement('div'); tg.className = 'tg'; tg.textContent = c.s || '';
+    const ci = document.createElement('div'); ci.className = 'ci'; ci.textContent = '재생목록 확인 중…';
+    const cu = document.createElement('div'); cu.className = 'cu'; cu.textContent = c.u; cu.title = c.u;
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'secondary'; bt.textContent = '선택';
+    bt.addEventListener('click', () => {
+      for (const r of $('cands').children) { r.classList.remove('sel'); const b = r.querySelector('button'); b.className = 'secondary'; b.textContent = '선택'; }
+      row.classList.add('sel'); bt.className = 'primary'; bt.textContent = '선택됨';
+      $('url').value = c.u; $('fname').value = ''; $('srcForm').requestSubmit();
+      $('url').closest('.card').scrollIntoView({ behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start' });
+    });
+    body.append(tg, ci, cu, bt); row.append(th, body); $('cands').appendChild(row);
+    return { c, th, ci };
+  });
+  for (const r of rows) {
+    if (tok !== candTok) return;
+    try {
+      let pl = await loadPlaylist(r.c.u), info;
+      if (pl.type === 'master') {
+        const v = pl.variants[0];
+        info = `마스터 · 화질 ${pl.variants.length}개${v.res ? ' · 최고 ' + v.res : ''}`;
+        pl = await loadPlaylist(v.uri);
+        if (pl.type !== 'media') throw new UserError('하위 재생목록 오류');
+        info += ` · ${fmtDur(pl.dur)}`;
+      } else info = `${fmtDur(pl.dur)} · 세그먼트 ${pl.segs.length}개${pl.ended ? '' : ' · 라이브'}`;
+      if (pl.drm) info += ' · DRM';
+      r.ci.textContent = info;
+      await showPreview(r.th, pl);
+    } catch (e) {
+      r.ci.textContent = e instanceof UserError ? e.message.split('\n')[0] : '불러올 수 없음'; r.ci.classList.add('bad');
+      setThumb(r.th, { msg:'불러올 수 없음' });
+    }
+  }
+}
+$('candClose').addEventListener('click', () => { candTok++; $('candCard').hidden = true; $('cands').replaceChildren(); });
+
 function guessName(u) {
   try {
     const p = new URL(u).pathname.split('/').filter(Boolean);
@@ -503,7 +640,7 @@ function ivFor(key, seq) {
   if (key.iv) { const h = key.iv.replace(/^0x/i, '').padStart(32, '0'); return Uint8Array.from(h.match(/../g), x => parseInt(x, 16)); }
   const iv = new Uint8Array(16), dv = new DataView(iv.buffer); dv.setUint32(8, Math.floor(seq / 2 ** 32)); dv.setUint32(12, seq >>> 0); return iv;
 }
-async function getPart(uri, range, key, seq, signal) {
+async function getPart(uri, range, key, seq, signal, onRetry) {
   return withRetry(async () => {
     let b = await fetchBuf(uri, range, signal);
     if (key) {
@@ -512,20 +649,20 @@ async function getPart(uri, range, key, seq, signal) {
       catch (e) { if (e instanceof UserError) throw e; throw new UserError('세그먼트 암호화 해제에 실패했습니다. 키가 맞지 않거나 DRM 스트림일 수 있습니다.'); }
     }
     return b;
-  }, signal);
+  }, signal, onRetry, 5);
 }
-async function downloadTrack(pl, label, signal, prog) {
+async function downloadTrack(pl, label, signal, prog, onRetry) {
   const segs = pl.segs, parts = new Array(segs.length);
   let next = 0, done = 0;
   const worker = async () => {
     while (next < segs.length) {
       const i = next++, s = segs[i];
-      parts[i] = await getPart(s.uri, s.range, s.key, s.seq, signal);
+      parts[i] = await getPart(s.uri, s.range, s.key, s.seq, signal, (n, e) => onRetry(label, i + 1, segs.length, n, e));
       done++; prog(label, done, segs.length, parts[i].byteLength);
     }
   };
   const m = segs[0].map;
-  const init = m ? await getPart(m.uri, m.range, m.key && m.key.iv ? m.key : null, 0, signal) : null;
+  const init = m ? await getPart(m.uri, m.range, m.key && m.key.iv ? m.key : null, 0, signal, (n, e) => onRetry(label, 0, segs.length, n, e)) : null;
   if (init) prog(label, 0, segs.length, init.byteLength);
   await Promise.all(Array.from({ length:Math.min(6, segs.length) }, worker));
   if (init) parts.unshift(init);
@@ -608,6 +745,20 @@ async function writeChunks(ff, parts, prefix) {
 
 /* ---------- 실행 ---------- */
 $('btnRun').addEventListener('click', run);
+/* 작업 중 화면 꺼짐 방지 (지원 브라우저만). 다른 앱으로 전환하면 모바일 브라우저가 네트워크를 멈출 수 있음 */
+let wakeLock = null, wantAwake = false;
+async function keepAwake(on) {
+  wantAwake = on;
+  try {
+    if (on && !wakeLock && navigator.wakeLock && document.visibilityState === 'visible') { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+    else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (!state.ctrl) return;
+  if (document.visibilityState === 'hidden') log('[주의] 페이지가 백그라운드로 전환됨. 모바일에서는 다운로드가 일시 중지될 수 있습니다.');
+  else { log('[복귀] 페이지로 돌아옴'); if (wantAwake) keepAwake(true); }
+});
 $('btnCancel').addEventListener('click', () => { if (!state.ctrl) return; state.ctrl.abort(); if (state.busyFF && state.ff) { try { state.ff.terminate(); } catch {} state.ff = null; } });
 function setProg(p) { $('prog').hidden = false; $('bar').style.width = Math.max(0, Math.min(100, p * 100)).toFixed(1) + '%'; }
 async function run() {
@@ -617,10 +768,11 @@ async function run() {
   const status = t => { $('status').textContent = t; };
   show($('runErr')); $('result').hidden = true;
   if (state.outUrl) { URL.revokeObjectURL(state.outUrl); state.outUrl = null; }
-  $('btnRun').disabled = true; $('btnCancel').hidden = false; $('btnParse').disabled = true; setProg(0);
+  $('btnRun').disabled = true; $('btnCancel').hidden = false; $('runHint').hidden = false; $('btnParse').disabled = true; setProg(0);
   const tracks = [{ pl:m, label:'영상' }]; if (state.audioMedia) tracks.push({ pl:state.audioMedia, label:'음성' });
   const total = tracks.reduce((a, t) => a + t.pl.segs.length, 0);
   let doneSegs = 0, bytes = 0, written = [], t0 = performance.now();
+  keepAwake(true);
   try {
     const ff = await getFF(status);
     if (signal.aborted) throw new DOMException('', 'AbortError');
@@ -632,6 +784,9 @@ async function run() {
         setProg(doneSegs / total * 0.85);
         const sec = (performance.now() - t0) / 1000;
         status(`${label} 받는 중 ${d}/${n} · ${fmtBytes(bytes)} · ${fmtBytes(bytes / Math.max(sec, .1))}/s`);
+      }, (label, idx, n, attempt, err) => {
+        log(`[재시도] ${label} ${idx ? idx + '번' : '초기화'} 세그먼트 ${attempt}회차 · ${err.message}`);
+        status(`${label} ${idx ? idx + '번' : '초기화'} 세그먼트 응답이 없어 다시 받는 중 (${attempt}/5)`);
       });
       if (bytes > 1.8 * 1073741824) log('[주의] 1.8GB를 넘어 브라우저 메모리가 부족할 수 있습니다.');
       const kind = sniff(parts[0]);
@@ -684,6 +839,7 @@ async function run() {
   } finally {
     state.onLog = null;
     if (state.ff) for (const n of written) { try { await state.ff.deleteFile(n); } catch {} }
+    keepAwake(false); $('runHint').hidden = true;
     state.ctrl = null; $('btnCancel').hidden = true; $('btnParse').disabled = false; updateRun();
   }
 }
@@ -736,7 +892,12 @@ function m3u8Finder(TOOL) {
   hd.appendChild(el('b', '', found.length ? 'm3u8 주소 ' + found.length + '개를 찾았습니다' : 'm3u8 주소를 찾지 못했습니다'));
   hd.appendChild(x); panel.appendChild(hd);
   if (!found.length) panel.appendChild(el('p', 'msg', '영상을 재생한 뒤 다시 눌러 보세요. 플레이어가 다른 사이트 안에 들어 있으면 아래 플레이어 페이지를 열어 거기서 실행하세요.'));
-  else panel.appendChild(el('p', 'msg', '여러 개라면 화질을 고를 수 있는 마스터 재생목록(주소에 master·playlist가 들어간 경우가 많음)을 먼저 열어 보세요.'));
+  else if (found.length > 1) {
+    panel.appendChild(el('p', 'msg', '어느 것인지 모르겠다면 미리보기로 장면과 길이를 비교해 고를 수 있습니다.'));
+    var cmp = el('button', 'p', '미리보기로 비교하기'); cmp.style.width = '100%'; cmp.style.marginTop = '10px';
+    cmp.onclick = function () { window.open(TOOL + '#urls=' + encodeURIComponent(JSON.stringify(found.slice(0, 20))), '_blank'); };
+    panel.appendChild(cmp);
+  }
   found.forEach(function (f) {
     var it = el('div', 'it'), rw = el('div', 'rw'), go = el('button', 'p', 'MP4로 받기'), cp = el('button', 's', '복사');
     it.appendChild(el('div', 'tg', f.s)); it.appendChild(el('div', 'u', f.u));
@@ -769,6 +930,15 @@ $('bmCopy').addEventListener('click', async () => {
 
 /* ---------- 다른 페이지에서 #url=… 로 넘어온 주소 자동 분석 ---------- */
 function takeHash() {
+  const mm = /^#urls=(.+)$/.exec(location.hash);
+  if (mm) {
+    let list = [];
+    try { list = JSON.parse(decodeURIComponent(mm[1])); } catch {}
+    history.replaceState(null, '', location.pathname + location.search);
+    list = (Array.isArray(list) ? list : []).filter(c => c && typeof c.u === 'string' && /^https?:\/\//i.test(c.u)).slice(0, 20).map(c => ({ u:c.u, s:typeof c.s === 'string' ? c.s.slice(0, 40) : '' }));
+    if (list.length) showCandidates(list);
+    return;
+  }
   const m = /^#url=(.+)$/.exec(location.hash); if (!m) return;
   let u = ''; try { u = decodeURIComponent(m[1]); } catch { return; }
   history.replaceState(null, '', location.pathname + location.search);
