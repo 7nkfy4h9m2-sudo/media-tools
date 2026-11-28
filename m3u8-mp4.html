@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <title>M3U8 to MP4 · Media Tools</title>
 <style>
-/* M3U8 to MP4 (Media Tools) v1.2.0 — Media Tools index와 같은 라이트 고정 토큰 */
+/* M3U8 to MP4 (Media Tools) v1.3.0 — Media Tools index와 같은 라이트 고정 토큰 */
 :root{--bg:#f3f4f6;--surface:#FFFFFF;--surface-2:#f0f1f3;--text:#22252b;--text-2:#737983;--line:#e8eaee;
   --accent:#3478F6;--accent-text:#1F5FD6;--accent-soft:rgba(52,120,246,.10);--danger:#FF3B30;--ok:#1E8E3E;
   --ease:cubic-bezier(.2,0,0,1);--font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Segoe UI Variable","Malgun Gothic",sans-serif;color-scheme:light}
@@ -25,15 +25,14 @@ main{max-width:760px;margin:0 auto;padding:20px max(4vw,16px) 48px;display:grid;
 .card h2 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-size:12px;font-weight:600}
 .opt{font-size:12px;font-weight:500;color:var(--text-2)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>.grow{flex:1 1 220px}
-input[type=url],input[type=text],input[type=number],select{font:inherit;font-size:16px;color:var(--text);background:var(--surface-2);border:1px solid transparent;border-radius:10px;min-height:44px;padding:0 12px;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+input[type=url],input[type=text],select{font:inherit;font-size:16px;color:var(--text);background:var(--surface-2);border:1px solid transparent;border-radius:10px;min-height:44px;padding:0 12px;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
 select{padding-right:8px}
-input:focus-visible,select:focus-visible,button:focus-visible,a.btn:focus-visible,.drop:focus-within{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input:focus-visible,select:focus-visible,button:focus-visible,a.btn:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 button,a.btn{font:inherit;font-weight:500;min-height:44px;padding:0 16px;border-radius:10px;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;transition:transform .15s var(--ease),opacity .15s var(--ease),background .15s var(--ease)}
 button:active,a.btn:active{transform:scale(.97)}
 .primary{background:var(--accent);color:#fff}.secondary{background:var(--surface-2);color:var(--text)}
 .icon{background:transparent;color:var(--text-2);padding:0;width:44px}.icon:hover{background:var(--surface-2)}
 button:disabled{opacity:.4;cursor:default;transform:none}
-.wide{width:100%}
 .hint{margin:10px 0 0;color:var(--text-2);font-size:13px}
 .finder{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:0 14px;color:var(--text);font-size:14px}
 .finder summary{min-height:44px;font-weight:500;gap:8px}.finder summary svg{width:18px;height:18px;color:var(--accent)}
@@ -57,24 +56,13 @@ textarea.code{width:100%;height:84px;margin-top:10px;font:12px/1.4 ui-monospace,
 @media (prefers-reduced-motion:reduce){.thumb.loading{animation:none}}
 .note{font-size:13px;color:var(--accent-text);min-height:20px;margin-top:8px}
 .err{margin:10px 0 0;color:var(--danger);font-size:13px;white-space:pre-line}
-.warn{margin:10px 0 0;color:var(--text);font-size:13px;background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.warn{margin:10px 0 0;color:var(--text);font-size:13px;white-space:pre-line;background:var(--surface-2);border-radius:10px;padding:10px 12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .chip{background:var(--surface-2);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums}
 .chip b{color:var(--text);font-weight:500}
 .field{display:grid;gap:4px;font-size:13px;color:var(--text-2)}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
-.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:96px;border:1.5px dashed var(--line);border-radius:14px;color:var(--text-2);font-size:14px;text-align:center;padding:12px;cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}
-.drop.over,.drop:hover{background:var(--accent-soft);border-color:var(--accent)}
-.drop input{position:absolute;width:1px;height:1px;opacity:0}
-.drop svg{width:24px;height:24px;color:var(--accent)}
-.subs{display:grid;gap:10px;margin-top:10px}
-.sub{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:10px}
-.sub-h{display:flex;align-items:center;gap:8px}.sub-h .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.sub-meta{font-size:13px;color:var(--text-2)}.sub-meta q{color:var(--text)}
-.sub-c{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.sub-c .field select,.sub-c .field input{width:100%}
-.radio{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;color:var(--text)}
-.radio input,.check input{width:18px;height:18px;accent-color:var(--accent)}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
 .check{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px}
 .prog{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:14px}
 .prog i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s var(--ease)}
@@ -91,7 +79,7 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
 <header class="top">
   <a class="back" href="index.html" aria-label="Media Tools로 돌아가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Media Tools</a><span class="sep" aria-hidden="true"></span>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg>
-  <h1>M3U8 to MP4</h1><span class="ver">v1.2.0</span>
+  <h1>M3U8 to MP4</h1><span class="ver">v1.3.0</span>
 </header>
 <main>
   <section class="card" id="candCard" hidden>
@@ -105,7 +93,6 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
       <input class="grow" id="url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…/index.m3u8" required>
       <button class="primary" id="btnParse" type="submit">분석</button>
     </form>
-    <p class="hint">영상·음성은 재인코딩 없이 그대로 복사합니다. 스트림 서버가 브라우저 요청을 허용(CORS)해야 하며, DRM 스트림은 지원하지 않습니다.</p>
     <details class="finder" id="finder">
       <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>웹페이지에서 m3u8 주소 찾기</summary>
       <div class="finder-body">
@@ -132,18 +119,7 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
   </section>
 
   <section class="card">
-    <h2><span class="n">2</span>자막 <span class="opt">선택 사항</span></h2>
-    <label class="drop" id="drop">
-      <input type="file" id="subFile" multiple accept=".smi,.sami,.srt,.ass,.ssa,.vtt">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-      <span>자막 파일을 끌어 놓거나 눌러서 선택</span><span class="opt">SMI · SRT · ASS · SSA · VTT, 여러 개 가능</span>
-    </label>
-    <div class="subs" id="subs"></div>
-    <p class="hint">MP4 내장 소프트 자막(mov_text)으로 넣습니다. ASS·SMI의 글꼴·위치·효과는 유지되지 않으며, 텍스트와 굵게·기울임·밑줄만 남습니다.</p>
-  </section>
-
-  <section class="card">
-    <h2><span class="n">3</span>저장</h2>
+    <h2><span class="n">2</span>저장</h2>
     <div class="grid2" style="margin-top:0">
       <label class="field">파일 이름<input type="text" id="fname" placeholder="video" spellcheck="false"></label>
       <label class="check"><input type="checkbox" id="faststart" checked>빠른 시작(faststart)</label>
@@ -167,10 +143,7 @@ pre{margin:6px 0 0;max-height:220px;overflow:auto;background:var(--surface-2);bo
 {
 const CDN = { core: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/' };
 const $ = id => document.getElementById(id);
-const LANGS = [['kor','한국어'],['eng','영어'],['jpn','일본어'],['chi','중국어'],['spa','스페인어'],['fre','프랑스어'],['ger','독일어'],['und','기타']];
-const ENCS = [['auto','자동'],['utf-8','UTF-8'],['euc-kr','EUC-KR (CP949)'],['utf-16le','UTF-16 LE'],['utf-16be','UTF-16 BE'],['shift_jis','Shift_JIS'],['gbk','GBK']];
-const state = { master:null, media:null, audioMedia:null, subs:[], ff:null, ctrl:null, url:'', outUrl:null };
-let subSeq = 0;
+const state = { master:null, media:null, audioMedia:null, ff:null, ctrl:null, url:'', outUrl:null };
 
 /* ---------- 공통 ---------- */
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -178,8 +151,8 @@ const fmtBytes = n => n >= 1073741824 ? (n/1073741824).toFixed(2)+' GB' : n >= 1
 const fmtDur = s => { s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h+':'+String(m).padStart(2,'0') : m)+':'+String(x).padStart(2,'0'); };
 const log = m => { const p = $('log'); p.textContent += m + '\n'; if (p.textContent.length > 60000) p.textContent = p.textContent.slice(-40000); p.scrollTop = p.scrollHeight; };
 const show = (el, msg) => { el.textContent = msg || ''; el.hidden = !msg; };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 class UserError extends Error {}
+function concat(list, size = list.reduce((a, b) => a + b.byteLength, 0)) { const out = new Uint8Array(size); let o = 0; for (const b of list) { out.set(b, o); o += b.byteLength; } return out; }
 
 const STALL_MS = 20000;   // 이 시간 동안 데이터가 한 바이트도 오지 않으면 요청을 끊고 다시 시도
 class StallError extends Error { constructor() { super('서버 응답이 멈춤'); this.name = 'StallError'; } }
@@ -200,19 +173,24 @@ async function fetchBuf(url, range, signal, asText) {
       throw new UserError('서버에 연결하지 못했습니다.\n주소가 맞다면 서버가 다른 사이트의 요청을 막고 있는(CORS) 경우로, 브라우저 웹앱으로는 받을 수 없습니다.');
     }
     if (!res.ok) throw new UserError(`서버가 요청을 거부했습니다 (HTTP ${res.status}).` + (res.status === 403 || res.status === 401 ? '\n주소가 만료됐거나 로그인·리퍼러 확인이 필요한 스트림일 수 있습니다.' : ''));
-    const chunks = []; let size = 0;
+    const len = res.headers.get('content-encoding') ? 0 : +res.headers.get('content-length') || 0;
+    let out = len ? new Uint8Array(len) : null, size = 0;
+    const chunks = [];
     try {
-      if (res.body && res.body.getReader) {
-        const rd = res.body.getReader();
-        for (;;) { arm(); const { done, value } = await rd.read(); if (done) break; chunks.push(value); size += value.byteLength; }
-      } else { const b = new Uint8Array(await res.arrayBuffer()); chunks.push(b); size = b.byteLength; }
+      const rd = res.body.getReader();
+      for (;;) {
+        arm();
+        const { done, value } = await rd.read(); if (done) break;
+        if (out && size + value.byteLength <= len) out.set(value, size); else { if (out) { chunks.push(out.subarray(0, size)); out = null; } chunks.push(value); }
+        size += value.byteLength;
+      }
     } catch (e) {
       if (stalled) throw new StallError();
       if (e.name === 'AbortError') throw e;
       throw new Error('받는 도중 연결이 끊김');
     }
-    const out = chunks.length === 1 ? chunks[0] : new Uint8Array(size);
-    if (chunks.length !== 1) { let o = 0; for (const c of chunks) { out.set(c, o); o += c.byteLength; } }
+    if (out) out = size === len ? out : out.subarray(0, size);
+    else out = chunks.length === 1 ? chunks[0] : concat(chunks, size);
     return asText ? new TextDecoder().decode(out) : out;
   } finally { clearTimeout(timer); if (signal) signal.removeEventListener('abort', onAbort); }
 }
@@ -341,7 +319,7 @@ function renderInfo(loading) {
   if (all.some(p => !p.ended)) warns.push('라이브 스트림입니다. 현재 재생목록에 있는 구간까지만 저장됩니다.');
   if (all.some(p => p.disc)) warns.push('중간에 끊김 구간(DISCONTINUITY)이 있습니다. 광고 삽입 등으로 구간마다 코덱 설정이 다르면 합성이 실패하거나 일부 구간이 재생되지 않을 수 있습니다.');
   if (all.some(p => p.multiMap)) warns.push('초기화 세그먼트가 여러 개인 fMP4 스트림이라 지원하지 않습니다.');
-  show($('srcWarn'), warns.join('\n')); $('srcWarn').style.whiteSpace = 'pre-line';
+  show($('srcWarn'), warns.join('\n'));
   updateRun();
 }
 /* ---------- 미리보기 (세그먼트 1개만 받아 한 장면 추출, 결과 MP4와 무관) ---------- */
@@ -355,11 +333,10 @@ function makePreview(pl) {
     const parts = [];
     if (s.map) parts.push(await getPart(s.map.uri, s.map.range, s.map.key && s.map.key.iv ? s.map.key : null, 0));
     parts.push(await getPart(s.uri, s.range, s.key, s.seq));
-    const buf = new Uint8Array(parts.reduce((a, b) => a + b.byteLength, 0)); let o = 0;
-    for (const x of parts) { buf.set(x, o); o += x.byteLength; }
+    const buf = concat(parts);
     const kind = sniff(buf);
     if (kind === 'aac') return { msg:'음성 전용' };
-    const ff = await getFF(() => {});
+    const ff = await getFF();
     const id = ++prevSeq, inN = `pv${id}.bin`, outN = `pv${id}.jpg`;
     await ff.writeFile(inN, buf);
     try {
@@ -445,188 +422,6 @@ function updateRun() {
   $('btnRun').disabled = !!blocked || !!state.ctrl;
 }
 
-/* ---------- 자막 변환 ---------- */
-function decodeText(b, enc) {
-  if (enc === 'auto') {
-    if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return ['utf-8', new TextDecoder('utf-8').decode(b)];
-    if (b[0] === 0xFF && b[1] === 0xFE) return ['utf-16le', new TextDecoder('utf-16le').decode(b)];
-    if (b[0] === 0xFE && b[1] === 0xFF) return ['utf-16be', new TextDecoder('utf-16be').decode(b)];
-    try { return ['utf-8', new TextDecoder('utf-8', { fatal:true }).decode(b)]; }
-    catch { return ['euc-kr', new TextDecoder('euc-kr').decode(b)]; }
-  }
-  return [enc, new TextDecoder(enc).decode(b)];
-}
-const ENT = { nbsp:' ', amp:'&', lt:'<', gt:'>', quot:'"', apos:"'" };
-const decEnt = s => s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);?/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ENT[e.toLowerCase()] ?? m));
-const keepTags = s => s.replace(/<\/?([a-z0-9.:]+)[^>]*>/gi, (m, n) => /^(b|i|u|font)$/i.test(n) ? m : '');
-function balance(s) {
-  const open = { b:0, i:0, u:0 };
-  s = s.replace(/<(\/?)([biu])>/gi, (m, c, t) => { t = t.toLowerCase(); if (c) { if (!open[t]) return ''; open[t]--; } else open[t]++; return m.toLowerCase(); });
-  for (const t of ['u', 'i', 'b']) s += `</${t}>`.repeat(open[t]);
-  return s;
-}
-const cleanLines = s => s.split('\n').map(l => l.replace(/[ \t ]+/g, ' ').trim()).filter(l => l.replace(/<[^>]*>/g, '').trim()).join('\n');
-const TS = /(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})/;
-const tms = m => ((+(m[1] || 0)) * 3600 + +m[2] * 60 + +m[3]) * 1000 + +m[4].padEnd(3, '0');
-function parseSRT(t) {
-  const cues = [];
-  for (const b of t.replace(/\r\n?/g, '\n').split(/\n[ \t]*\n/)) {
-    const ls = b.split('\n'), k = ls.findIndex(l => l.includes('-->'));
-    if (k < 0) continue;
-    const [a, c] = ls[k].split('-->'), ma = a.match(TS), mc = c.match(TS);
-    if (!ma || !mc) continue;
-    const tx = cleanLines(decEnt(keepTags(ls.slice(k + 1).join('\n'))));
-    if (tx) cues.push({ s:tms(ma), e:tms(mc), t:tx });
-  }
-  return cues;
-}
-function parseASS(t) {
-  let inEv = false, fmt = null; const cues = [];
-  const assT = x => { const m = /(\d+):(\d+):(\d+)[.:](\d+)/.exec(x || ''); return m ? ((+m[1] * 60 + +m[2]) * 60 + +m[3]) * 1000 + +m[4].padEnd(3, '0').slice(0, 3) : NaN; };
-  for (const raw of t.replace(/\r/g, '').split('\n')) {
-    const s = raw.trim();
-    if (s.startsWith('[')) { inEv = /^\[events\]/i.test(s); continue; }
-    if (!inEv) continue;
-    if (/^format\s*:/i.test(s)) { fmt = s.slice(s.indexOf(':') + 1).split(',').map(x => x.trim().toLowerCase()); continue; }
-    if (!/^dialogue\s*:/i.test(s)) continue;
-    const f = fmt || ['layer','start','end','style','name','marginl','marginr','marginv','effect','text'];
-    let rest = s.slice(s.indexOf(':') + 1); const p = [];
-    for (let i = 0; i < f.length - 1; i++) { const k = rest.indexOf(','); if (k < 0) break; p.push(rest.slice(0, k)); rest = rest.slice(k + 1); }
-    p.push(rest);
-    const g = n => p[f.indexOf(n)];
-    let tx = g('text') || '';
-    if (/\{[^}]*\\p[1-9]/.test(tx)) continue;
-    tx = tx.replace(/</g, '‹').replace(/>/g, '›')
-           .replace(/\{([^}]*)\}/g, (m, c) => { let o = ''; c.replace(/\\([biu])(\d+)?/g, (_, k, v) => { if (v === undefined) return; o += v === '0' ? `</${k}>` : `<${k}>`; }); return o; })
-           .replace(/\\[Nn]/g, '\n').replace(/\\h/g, ' ');
-    tx = cleanLines(balance(tx));
-    const st = assT(g('start')), en = assT(g('end'));
-    if (tx && en > st) cues.push({ s:st, e:en, t:tx });
-  }
-  return cues;
-}
-function parseSMI(t) {
-  const names = {};
-  const st = t.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  if (st) st[1].replace(/\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g, (_, n, b) => { const l = b.match(/lang\s*:\s*([^;]+)/i); names[n.toUpperCase()] = { name:n, lang:l ? l[1].trim() : '' }; });
-  const syncs = [], re = /<sync\b[^>]*?start\s*=\s*["']?(-?\d+)[^>]*>([\s\S]*?)(?=<sync\b|<\/body|$)/gi;
-  let m;
-  while ((m = re.exec(t))) {
-    const start = +m[1], parts = m[2].split(/<p\b/i);
-    if (parts.length === 1) syncs.push({ start, cls:'', html:parts[0] });
-    else for (const p of parts.slice(1)) { const cm = p.match(/^[^>]*class\s*=\s*["']?([A-Za-z0-9_-]+)/i); syncs.push({ start, cls:cm ? cm[1].toUpperCase() : '', html:p.replace(/^[^>]*>/, '') }); }
-  }
-  const toText = h => cleanLines(decEnt(keepTags(h.replace(/[\r\n]+/g, ' ').replace(/<br\s*\/?>/gi, '\n').replace(/<\/?p[^>]*>/gi, ''))));
-  const classes = [...new Set(syncs.map(s => s.cls).filter(Boolean))];
-  const build = cls => {
-    const list = syncs.filter(s => s.cls === cls || !s.cls || classes.length <= 1).sort((a, b) => a.start - b.start), out = [];
-    list.forEach((s, i) => { const tx = toText(s.html); if (!tx) return; const nx = list.slice(i + 1).find(x => x.start > s.start); out.push({ s:s.start, e:nx ? nx.start : s.start + 4000, t:tx }); });
-    return out;
-  };
-  return { classes:classes.map(c => ({ id:c, label:(names[c] && (names[c].name + (names[c].lang ? ` · ${names[c].lang}` : ''))) || c })), build };
-}
-function flatten(cues) {
-  cues = cues.filter(c => c.e > c.s).sort((a, b) => a.s - b.s || a.e - b.e);
-  const pts = [...new Set(cues.flatMap(c => [c.s, c.e]))].sort((a, b) => a - b), out = [];
-  let act = [], ci = 0;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const a = pts[i], b = pts[i + 1];
-    while (ci < cues.length && cues[ci].s <= a) act.push(cues[ci++]);
-    act = act.filter(c => c.e > a);
-    const tx = [...new Set(act.map(c => c.t))].join('\n');
-    if (!tx) continue;
-    const last = out[out.length - 1];
-    if (last && last.e === a && last.t === tx) last.e = b; else out.push({ s:a, e:b, t:tx });
-  }
-  return out;
-}
-const srtTime = ms => { const z = (n, l = 2) => String(n).padStart(l, '0'); return `${z(Math.floor(ms / 3600000))}:${z(Math.floor(ms / 60000) % 60)}:${z(Math.floor(ms / 1000) % 60)},${z(ms % 1000, 3)}`; };
-function toSRT(cues, offsetMs) {
-  const out = [];
-  for (const c of cues) { const s = Math.max(0, Math.round(c.s + offsetMs)), e = Math.round(c.e + offsetMs); if (e > s) out.push(`${out.length + 1}\n${srtTime(s)} --> ${srtTime(e)}\n${c.t}\n`); }
-  return out.join('\n');
-}
-function detectFmt(name, text) {
-  const ext = (name.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase();
-  if (ext === 'smi' || ext === 'sami' || /<sami/i.test(text.slice(0, 2000))) return 'SMI';
-  if (ext === 'ass' || ext === 'ssa' || /^\s*\[script info\]/i.test(text)) return ext === 'ssa' ? 'SSA' : 'ASS';
-  if (ext === 'vtt' || /^\s*WEBVTT/.test(text)) return 'VTT';
-  return 'SRT';
-}
-function guessLang(name, cls, text) {
-  const k = (name + ' ' + (cls || '')).toLowerCase();
-  if (/(^|[._\s-])(ko|kor|kr|krcc|korean|한국어|한글)([._\s-]|$)/.test(k)) return 'kor';
-  if (/(^|[._\s-])(en|eng|encc|english|egcc)([._\s-]|$)/.test(k)) return 'eng';
-  if (/(^|[._\s-])(ja|jpn|jp|jpcc|japanese)([._\s-]|$)/.test(k)) return 'jpn';
-  if (/(^|[._\s-])(zh|chi|zho|chs|cht|chinese)([._\s-]|$)/.test(k)) return 'chi';
-  const sample = text.slice(0, 20000);
-  if (/[가-힣]/.test(sample)) return 'kor';
-  if (/[぀-ヿ]/.test(sample)) return 'jpn';
-  if (/[一-鿿]/.test(sample)) return 'chi';
-  return /[a-z]{3,}/i.test(sample) ? 'eng' : 'und';
-}
-function parseSub(sub) {
-  sub.error = '';
-  try {
-    const [enc, text] = decodeText(sub.bytes, sub.enc); sub.detected = enc;
-    sub.fmt = detectFmt(sub.name, text);
-    let cues;
-    if (sub.fmt === 'SMI') {
-      const r = parseSMI(text); sub.classes = r.classes;
-      if (r.classes.length && !r.classes.some(c => c.id === sub.cls)) sub.cls = (r.classes.find(c => guessLang('', c.id, '') === 'kor') || r.classes[0]).id;
-      cues = r.build(sub.cls);
-    } else { sub.classes = []; cues = sub.fmt === 'SRT' || sub.fmt === 'VTT' ? parseSRT(text) : parseASS(text); }
-    sub.cues = flatten(cues);
-    if (!sub.langSet) sub.lang = guessLang(sub.name, sub.cls, sub.cues.slice(0, 200).map(c => c.t).join(' '));
-    if (!sub.cues.length) sub.error = '읽을 수 있는 자막이 없습니다. 인코딩이나 파일 형식을 확인해 주세요.';
-    else if (/�/.test(sub.cues.slice(0, 50).map(c => c.t).join(''))) sub.error = '글자가 깨져 보입니다. 인코딩을 바꿔 보세요.';
-  } catch (e) { sub.cues = []; sub.error = '자막을 읽지 못했습니다: ' + e.message; }
-}
-async function addFiles(files) {
-  for (const f of files) {
-    if (f.size > 20 * 1048576) { log(`[자막] ${f.name}: 20MB를 넘어 건너뜀`); continue; }
-    const sub = { id:++subSeq, name:f.name, bytes:new Uint8Array(await f.arrayBuffer()), enc:'auto', cls:'', lang:'und', langSet:false, offset:0, def:!state.subs.length };
-    parseSub(sub); state.subs.push(sub);
-  }
-  renderSubs();
-}
-function renderSubs() {
-  $('subs').innerHTML = state.subs.map(s => {
-    const first = s.cues[0];
-    const meta = s.cues.length ? `${s.fmt} · ${s.detected.toUpperCase()} · 자막 ${s.cues.length}개 · 처음 ${srtTime(first.s).slice(0, 8)} <q>${esc(first.t.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').slice(0, 40))}</q>` : `${s.fmt || ''}`;
-    return `<div class="sub" data-id="${s.id}">
-      <div class="sub-h"><span class="nm" title="${esc(s.name)}">${esc(s.name)}</span>
-        <button class="icon" data-act="del" aria-label="자막 삭제"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="sub-meta">${meta}</div>${s.error ? `<p class="err" style="margin:0">${esc(s.error)}</p>` : ''}
-      <div class="sub-c">
-        <label class="field">언어<select data-k="lang">${LANGS.map(([v, n]) => `<option value="${v}"${v === s.lang ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
-        ${s.classes.length > 1 ? `<label class="field">SMI 언어 클래스<select data-k="cls">${s.classes.map(c => `<option value="${esc(c.id)}"${c.id === s.cls ? ' selected' : ''}>${esc(c.label)}</option>`).join('')}</select></label>` : ''}
-        <label class="field">인코딩<select data-k="enc">${ENCS.map(([v, n]) => `<option value="${v}"${v === s.enc ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
-        <label class="field">싱크 조절(초)<input type="number" data-k="offset" step="0.1" value="${s.offset}" inputmode="decimal"></label>
-        <label class="radio"><input type="radio" name="defsub" data-k="def"${s.def ? ' checked' : ''}>기본 자막</label>
-      </div></div>`;
-  }).join('');
-}
-$('subs').addEventListener('change', e => {
-  const box = e.target.closest('.sub'); if (!box) return;
-  const s = state.subs.find(x => x.id === +box.dataset.id), k = e.target.dataset.k; if (!s || !k) return;
-  if (k === 'def') state.subs.forEach(x => x.def = x === s);
-  else if (k === 'offset') s.offset = parseFloat(e.target.value) || 0;
-  else if (k === 'lang') { s.lang = e.target.value; s.langSet = true; }
-  else { s[k] = e.target.value; parseSub(s); renderSubs(); }
-});
-$('subs').addEventListener('click', e => {
-  const b = e.target.closest('[data-act=del]'); if (!b) return;
-  const id = +b.closest('.sub').dataset.id; state.subs = state.subs.filter(x => x.id !== id);
-  if (state.subs.length && !state.subs.some(x => x.def)) state.subs[0].def = true;
-  renderSubs();
-});
-$('subFile').addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; });
-const drop = $('drop');
-['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
-
 /* ---------- 다운로드 ---------- */
 const keyCache = new Map();
 function getKey(uri, signal) {
@@ -651,22 +446,30 @@ async function getPart(uri, range, key, seq, signal, onRetry) {
     return b;
   }, signal, onRetry, 5);
 }
-async function downloadTrack(pl, label, signal, prog, onRetry) {
-  const segs = pl.segs, parts = new Array(segs.length);
-  let next = 0, done = 0;
+/* 받은 세그먼트를 순서대로 모아 64MB 단위 파일로 바로 엔진에 넘김 (전체를 메모리에 쌓지 않음) */
+async function downloadTrack(ff, pl, label, prefix, written, signal, prog, onRetry) {
+  const segs = pl.segs, parts = new Array(segs.length), names = [], LIM = 64 * 1048576;
+  let next = 0, done = 0, head = 0, buf = [], size = 0, kind = '', writing = Promise.resolve();
+  const flush = () => {
+    if (!buf.length) return;
+    const data = concat(buf, size), n = `${prefix}${String(names.length).padStart(3, '0')}.bin`;
+    names.push(n); written.push(n); buf = []; size = 0;
+    writing = writing.then(() => ff.writeFile(n, data)); writing.catch(() => {});
+  };
+  const take = b => { if (!kind) kind = sniff(b); buf.push(b); size += b.byteLength; if (size >= LIM) flush(); };
+  const m = segs[0].map;
+  if (m) { const init = await getPart(m.uri, m.range, m.key && m.key.iv ? m.key : null, 0, signal, (n, e) => onRetry(label, 0, n, e)); prog(label, 0, segs.length, init.byteLength); take(init); }
   const worker = async () => {
     while (next < segs.length) {
       const i = next++, s = segs[i];
-      parts[i] = await getPart(s.uri, s.range, s.key, s.seq, signal, (n, e) => onRetry(label, i + 1, segs.length, n, e));
+      parts[i] = await getPart(s.uri, s.range, s.key, s.seq, signal, (n, e) => onRetry(label, i + 1, n, e));
       done++; prog(label, done, segs.length, parts[i].byteLength);
+      while (head < segs.length && parts[head]) { take(parts[head]); parts[head++] = null; }
     }
   };
-  const m = segs[0].map;
-  const init = m ? await getPart(m.uri, m.range, m.key && m.key.iv ? m.key : null, 0, signal, (n, e) => onRetry(label, 0, segs.length, n, e)) : null;
-  if (init) prog(label, 0, segs.length, init.byteLength);
   await Promise.all(Array.from({ length:Math.min(6, segs.length) }, worker));
-  if (init) parts.unshift(init);
-  return parts;
+  flush(); await writing;
+  return { kind, names };
 }
 function sniff(b) {
   if (b[0] === 0x47 && (b.length < 189 || b[188] === 0x47)) return 'mpegts';
@@ -720,29 +523,20 @@ class FF {
   deleteFile(path) { return this.call('delete', { path }); }
   terminate() { this.w.terminate(); this.fail(new DOMException('', 'AbortError')); }
 }
-async function getFF(status) {
-  if (state.ff) return state.ff;
-  status('변환 엔진 준비 중… (처음 한 번 약 32MB를 받습니다)');
-  const ff = new FF(msg => { state.onLog && state.onLog(msg); });
-  try { await ff.load(await blobURL(CDN.core + 'ffmpeg-core.js', 'text/javascript'), await blobURL(CDN.core + 'ffmpeg-core.wasm', 'application/wasm')); }
-  catch (e) { ff.w.terminate(); throw e instanceof UserError ? e : new UserError('변환 엔진을 시작하지 못했습니다: ' + e.message); }
-  return (state.ff = ff);
+let ffLoading = null;   // 미리보기·실행이 동시에 요청해도 엔진은 한 번만 불러옴
+function getFF(status) {
+  if (state.ff) return Promise.resolve(state.ff);
+  status && status('변환 엔진 준비 중… (처음 한 번 약 32MB를 받습니다)');
+  return ffLoading || (ffLoading = (async () => {
+    const ff = new FF(msg => { state.onLog && state.onLog(msg); });
+    try {
+      const [core, wasm] = await Promise.all([blobURL(CDN.core + 'ffmpeg-core.js', 'text/javascript'), blobURL(CDN.core + 'ffmpeg-core.wasm', 'application/wasm')]);
+      await ff.load(core, wasm);
+      return (state.ff = ff);
+    } catch (e) { ff.w.terminate(); throw e instanceof UserError ? e : new UserError('변환 엔진을 시작하지 못했습니다: ' + e.message); }
+    finally { ffLoading = null; }
+  })());
 }
-async function writeChunks(ff, parts, prefix) {
-  const names = [], LIM = 64 * 1048576;
-  let buf = [], size = 0;
-  const flush = async () => {
-    if (!buf.length) return;
-    const out = new Uint8Array(size); let o = 0;
-    for (const p of buf) { out.set(p, o); o += p.byteLength; }
-    const n = `${prefix}${String(names.length).padStart(3, '0')}.bin`;
-    await ff.writeFile(n, out); names.push(n); buf = []; size = 0;
-  };
-  for (let i = 0; i < parts.length; i++) { buf.push(parts[i]); size += parts[i].byteLength; parts[i] = null; if (size >= LIM) await flush(); }
-  await flush();
-  return names;
-}
-
 /* ---------- 실행 ---------- */
 $('btnRun').addEventListener('click', run);
 /* 작업 중 화면 꺼짐 방지 (지원 브라우저만). 다른 앱으로 전환하면 모바일 브라우저가 네트워크를 멈출 수 있음 */
@@ -763,7 +557,6 @@ $('btnCancel').addEventListener('click', () => { if (!state.ctrl) return; state.
 function setProg(p) { $('prog').hidden = false; $('bar').style.width = Math.max(0, Math.min(100, p * 100)).toFixed(1) + '%'; }
 async function run() {
   const m = state.media; if (!m) return;
-  const subs = state.subs.filter(s => s.cues.length);
   const ctrl = state.ctrl = new AbortController(), signal = ctrl.signal;
   const status = t => { $('status').textContent = t; };
   show($('runErr')); $('result').hidden = true;
@@ -779,34 +572,23 @@ async function run() {
     log(`[시작] ${state.url}`);
     const inputs = [];
     for (const tr of tracks) {
-      const parts = await downloadTrack(tr.pl, tr.label, signal, (label, d, n, b) => {
+      const { kind, names } = await downloadTrack(ff, tr.pl, tr.label, tr.label === '영상' ? 'v' : 'a', written, signal, (label, d, n, b) => {
         bytes += b; if (d) doneSegs++;
         setProg(doneSegs / total * 0.85);
         const sec = (performance.now() - t0) / 1000;
         status(`${label} 받는 중 ${d}/${n} · ${fmtBytes(bytes)} · ${fmtBytes(bytes / Math.max(sec, .1))}/s`);
-      }, (label, idx, n, attempt, err) => {
+      }, (label, idx, attempt, err) => {
         log(`[재시도] ${label} ${idx ? idx + '번' : '초기화'} 세그먼트 ${attempt}회차 · ${err.message}`);
         status(`${label} ${idx ? idx + '번' : '초기화'} 세그먼트 응답이 없어 다시 받는 중 (${attempt}/5)`);
       });
       if (bytes > 1.8 * 1073741824) log('[주의] 1.8GB를 넘어 브라우저 메모리가 부족할 수 있습니다.');
-      const kind = sniff(parts[0]);
-      status(`${tr.label} 정리 중…`);
-      const names = await writeChunks(ff, parts, tr.label === '영상' ? 'v' : 'a');
-      written.push(...names);
       inputs.push({ kind, src:names.length === 1 ? names[0] : 'concat:' + names.join('|') });
       log(`[${tr.label}] ${tr.pl.segs.length}개 세그먼트, ${kind}, 파일 ${names.length}개`);
     }
     const args = ['-hide_banner', '-y'];
     inputs.forEach(i => args.push('-f', i.kind, '-i', i.src));
-    for (const [i, s] of subs.entries()) {
-      const n = `s${i}.srt`;
-      await ff.writeFile(n, new TextEncoder().encode(toSRT(s.cues, Math.round(s.offset * 1000))));
-      written.push(n); args.push('-f', 'srt', '-i', n);
-    }
     args.push('-map', '0:v?', '-map', inputs.length > 1 ? '1:a' : '0:a?');
-    subs.forEach((_, i) => args.push('-map', `${inputs.length + i}:0`));
-    args.push('-c', 'copy', '-c:s', 'mov_text');
-    subs.forEach((s, i) => args.push(`-metadata:s:s:${i}`, `language=${s.lang}`, `-disposition:s:${i}`, s.def ? 'default' : '0'));
+    args.push('-c', 'copy');
     if ($('faststart').checked) args.push('-movflags', '+faststart');
     args.push('out.mp4');
     log('[ffmpeg] ' + args.join(' '));
@@ -828,7 +610,7 @@ async function run() {
     state.outUrl = URL.createObjectURL(blob);
     const name = ($('fname').value.trim() || 'video').replace(/[\\/:*?"<>|]+/g, '_').replace(/\.mp4$/i, '') + '.mp4';
     $('dl').href = state.outUrl; $('dl').download = name;
-    $('resText').textContent = `완료 · ${fmtBytes(blob.size)}${subs.length ? ` · 자막 ${subs.length}개` : ''} · ${fmtDur((performance.now() - t0) / 1000)}`;
+    $('resText').textContent = `완료 · ${fmtBytes(blob.size)} · ${fmtDur((performance.now() - t0) / 1000)}`;
     $('result').hidden = false; setProg(1); status('');
     log(`[완료] ${name} ${fmtBytes(blob.size)}`);
   } catch (e) {
